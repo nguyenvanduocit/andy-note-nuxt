@@ -1,0 +1,461 @@
+/* =================================================================
+ * andy-note-nuxt — brutalist terminal theme
+ * Tailwind v3 base + custom @layer additions for prose / list rows.
+ * Tokens defined in tailwind.config.js; CSS vars below are kept only
+ * for inline-style usage in stacked-column layout (--column-width etc.)
+ * ================================================================= */
+
+/* Fonts — @import MUST precede @tailwind directives per CSS spec.
+   Local @fontsource packages = self-host (no FOUT, no third-party request). */
+@import "@fontsource/space-grotesk/300.css";
+@import "@fontsource/space-grotesk/400.css";
+@import "@fontsource/space-grotesk/500.css";
+@import "@fontsource/space-grotesk/600.css";
+@import "@fontsource/space-grotesk/700.css";
+@import "@fontsource/literata/400.css";
+@import "@fontsource/literata/400-italic.css";
+@import "@fontsource/literata/600.css";
+@import "@fontsource/literata/700.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Layout/spacing tokens that components reference via inline style. */
+  :root {
+    --column-width: 640px;
+    --column-min-width: 540px;
+    --content-width: 720px;
+    --content-width-wide: 960px;
+
+    /* Width of the peek strip when an earlier column is sticky-stacked at
+       the left edge (Andy Matuschak / Stripe-docs pattern). 48px = visible
+       border + a few characters of section header, and ≥ minimum tap target
+       (44px) so peek strips are clickable on touch devices. */
+    --stack-peek: 48px;
+
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.5rem;
+    --space-6: 2rem;
+    --space-7: 2.5rem;
+    --space-8: 3rem;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  * { margin: 0; padding: 0; }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-terminal-bg text-terminal-text font-display;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-bold uppercase tracking-tight;
+    text-wrap: balance;
+  }
+
+  ::selection { @apply bg-primary text-terminal-bg; }
+  ::-moz-selection { @apply bg-primary text-terminal-bg; }
+
+  /* Thin scrollbars with lime hover — matches the terminal accent. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.terminal.border') transparent;
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-terminal-border; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-primary; }
+  ::-webkit-scrollbar-corner { @apply bg-transparent; }
+
+  img, svg, video { max-width: 100%; height: auto; display: block; }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+  input, select, textarea { font: inherit; color: inherit; }
+
+  /* Tabular numerals for stat tables, prices, comparison columns. */
+  table, time, code, .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* ---------- Brutalist primitives ---------- */
+
+  /* Section header used inside stacked-column scroll bodies.
+     Sticky to the column top, with the `/XX. TITLE [BADGE]` motif. */
+  .section-card-header {
+    @apply px-4 py-3 border-b-[3px] border-terminal-border sticky top-0 z-10 bg-terminal-bg;
+  }
+
+  /* Dotted leader (between list-row title and counter). 2px dashes,
+     positioned slightly above baseline so it visually aligns with letter midline. */
+  .dotted-leader {
+    flex-grow: 1;
+    border-bottom: 2px dotted theme('colors.terminal.border');
+    margin: 0 0.75rem;
+    position: relative;
+    top: -4px;
+  }
+
+  /* Hover-stamp effect on list items — outline + offset shadow on hover. */
+  .terminal-item:hover .title-text {
+    outline: 2px solid theme('colors.primary');
+    box-shadow: 4px 4px 0px 0px theme('colors.primary');
+    background: transparent;
+  }
+
+  /* Stacked-column trail highlight — when a list row's target path is open
+     as a deeper column in the stack, mark it with persistent filled bg so
+     the user can see which row led to which column (Miller-column UX). */
+  .terminal-item--active .title-text {
+    @apply bg-primary text-terminal-bg;
+  }
+  .terminal-item--active .dotted-leader {
+    border-bottom-color: theme('colors.primary');
+  }
+  .terminal-item--active:hover .title-text {
+    /* Hover on already-active item: keep filled bg + inverted text, add offset
+       shadow as click-affordance hint. Must re-declare bg/color because the
+       generic `.terminal-item:hover .title-text` rule has equal specificity
+       and resets `background: transparent` — without these, text becomes
+       terminal-bg on transparent (= invisible against the dark page). */
+    @apply bg-primary text-terminal-bg;
+    outline: 2px solid theme('colors.primary');
+    box-shadow: 4px 4px 0px 0px theme('colors.primary');
+  }
+
+  /* List row used in section listings (sections + articles). */
+  .list-row {
+    @apply flex flex-col gap-1 py-3 px-4 border-b border-terminal-border transition-colors;
+  }
+  .list-row:hover {
+    @apply bg-terminal-surface-0;
+  }
+  .list-row__title {
+    @apply text-base font-bold uppercase tracking-tight text-terminal-text transition-colors;
+  }
+  .list-row:hover .list-row__title {
+    @apply text-primary;
+  }
+  .list-row__description {
+    @apply text-sm text-terminal-text-muted normal-case;
+    font-family: 'Literata', Georgia, serif;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .list-row__meta {
+    @apply text-[10px] text-terminal-text-faint uppercase tracking-widest font-mono mt-1 flex flex-wrap gap-x-3;
+  }
+
+  /* Tag badge — bracketed, mono, hover lime. */
+  .tag-badge {
+    @apply inline-block text-[10px] font-bold font-mono uppercase tracking-widest px-2 py-1 border-2 border-terminal-border text-terminal-text-secondary transition-colors;
+  }
+  .tag-badge::before {
+    content: '#';
+    @apply text-terminal-text-faint mr-0.5;
+  }
+  .tag-badge:hover {
+    @apply border-primary text-primary;
+  }
+  .tag-badge--active {
+    @apply bg-primary text-terminal-bg border-primary;
+  }
+  .tag-badge--active::before {
+    @apply text-terminal-bg;
+  }
+
+  /* Game-version chip used in article listings — POE1 vs POE2.
+     Differentiation rides on FILL WEIGHT, not hue, so the visual signal stays
+     readable for color-vision-deficient readers and at small sizes:
+       POE1 → filled lime block (current league emphasis)
+       POE2 → outlined lime (transparent fill, lime border + text)
+     Padding is trimmed on outlined/unknown variants so border-box height
+     matches the filled chip on the same row. */
+  .game-chip {
+    @apply font-mono text-xs font-bold uppercase tracking-tight px-1.5 py-0.5 inline-flex items-center shrink-0 whitespace-nowrap leading-none;
+    letter-spacing: 0.04em;
+  }
+  .game-chip--poe1 {
+    @apply bg-primary text-terminal-bg;
+  }
+  .game-chip--poe2 {
+    @apply border-2 border-primary text-primary bg-transparent;
+    padding-top: calc(0.125rem - 2px);
+    padding-bottom: calc(0.125rem - 2px);
+    padding-left: calc(0.375rem - 2px);
+    padding-right: calc(0.375rem - 2px);
+  }
+  .game-chip--unknown {
+    @apply border border-terminal-border text-terminal-text-muted bg-transparent;
+    padding-top: calc(0.125rem - 1px);
+    padding-bottom: calc(0.125rem - 1px);
+    padding-left: calc(0.375rem - 1px);
+    padding-right: calc(0.375rem - 1px);
+  }
+
+  /* Section heading inside list-view (e.g. "Sections" / "Articles"). */
+  .section-heading {
+    @apply text-xs font-bold uppercase tracking-widest-lg text-terminal-text-muted mt-8 mb-3 pb-2 border-b border-terminal-border flex items-center gap-2;
+  }
+  .section-heading::before {
+    content: '';
+    @apply w-2 h-2 bg-primary;
+  }
+
+  /* Meta row (author · date · tags) — separated by middle dot. */
+  .meta {
+    @apply flex flex-wrap gap-x-4 gap-y-1 text-xs text-terminal-text-muted font-mono uppercase tracking-wider;
+  }
+  .meta > * + *::before {
+    content: '·';
+    @apply text-terminal-text-faint mr-2;
+  }
+  .meta > * + * {
+    margin-inline-start: -1rem;
+    padding-inline-start: 1rem;
+  }
+
+  /* ---------- Long-form prose (.content rendered markdown) ---------- */
+  /* Applied to <ContentRenderer> output — h2/h3/p/ul/ol/code/pre/table generated
+     from markdown. Literata serif body for readability, brutalist treatment for
+     code/tables/lists. */
+  .content {
+    @apply text-terminal-text;
+    font-family: 'Literata', Georgia, serif;
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    letter-spacing: 0.008em;
+  }
+
+  .content > * + * { margin-top: 1.5rem; }
+
+  .content h1 {
+    @apply font-display font-bold uppercase tracking-tight text-2xl md:text-3xl mt-10 mb-4;
+  }
+  .content h2 {
+    @apply font-display font-bold uppercase tracking-tight text-lg md:text-xl mt-10 mb-4;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .content h3 {
+    @apply font-display font-bold uppercase tracking-tight text-lg mt-8 mb-3;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .content h4, .content h5, .content h6 {
+    @apply font-display font-bold uppercase tracking-widest text-xs text-terminal-text-muted mt-6 mb-2;
+  }
+
+  .content p { @apply my-4; }
+
+  .content a {
+    @apply text-primary transition-colors;
+    text-decoration: none;
+  }
+  .content a:hover {
+    @apply text-terminal-accent-hover;
+    text-decoration: underline;
+    text-decoration-style: wavy;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 2px;
+  }
+
+  .content strong { @apply text-terminal-text font-semibold; }
+  .content em { font-style: italic; }
+
+  /* Lists — top level uses heavy brutalist markers (lime square, decimal-leading-zero
+     counter). Nested levels strip the box/shadow/zero-pad chrome and tighten padding,
+     because in stacked columns 540-640px wide, every depth was eating ~2-2.5rem of
+     padding plus a repeating stamp — three levels deep left almost nothing for prose. */
+  .content ul, .content ol {
+    @apply my-4 space-y-2 list-none pl-0;
+  }
+  .content li {
+    @apply pl-7 relative;
+    line-height: 1.6;
+  }
+  .content ul li::before {
+    content: '';
+    @apply absolute left-0 top-2 w-3 h-3 bg-primary border-2 border-terminal-border;
+    box-shadow: 2px 2px 0px theme('colors.terminal.border');
+  }
+  .content ol {
+    counter-reset: terminal-counter;
+  }
+  .content ol li {
+    counter-increment: terminal-counter;
+    @apply pl-10;
+  }
+  .content ol li::before {
+    content: counter(terminal-counter, decimal-leading-zero);
+    @apply absolute left-0 top-1 inline-flex items-center justify-center bg-terminal-surface-0 text-primary border-2 border-terminal-border text-xs font-bold font-display;
+    width: 1.6rem;
+    height: 1.3rem;
+    box-shadow: 2px 2px 0px theme('colors.terminal.border');
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  /* Nested lists (depth ≥ 2): drop the box stamp, switch to flat text markers,
+     trim padding and vertical rhythm. Selectors `.content li ul/ol li` only match
+     items inside an outer <li>, so the top-level rules above stay untouched. */
+  .content li ul, .content li ol {
+    @apply my-1 space-y-1 pl-0;
+  }
+  .content li ul li,
+  .content li ol li {
+    padding-left: 1.25rem;
+    line-height: 1.55;
+  }
+  .content li ul li::before {
+    content: '›';
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    width: auto;
+    height: auto;
+    color: theme('colors.terminal.text-muted');
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    font-weight: 700;
+    font-size: 1em;
+    top: 0;
+    left: 0.25rem;
+    line-height: inherit;
+    display: inline;
+  }
+  .content li ol li {
+    padding-left: 1.6rem;
+  }
+  .content li ol li::before {
+    content: counter(terminal-counter) '.';
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    width: auto;
+    height: auto;
+    padding: 0;
+    color: theme('colors.terminal.text-muted');
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    font-weight: 700;
+    font-size: 0.85em;
+    top: 0.15rem;
+    left: 0;
+    display: inline;
+    line-height: inherit;
+  }
+
+  /* Blockquote — bg + italic carry the visual cue; no border/shadow chrome. */
+  .content blockquote {
+    @apply bg-terminal-surface-0 p-4 my-6 italic text-terminal-text-secondary;
+  }
+  .content blockquote p { @apply mb-0; }
+
+  /* Code — inline keeps a thin border to look tag-like; pre block relies on
+     bg + lime rail accent (no frame, no shadow). */
+  .content code:not(pre code) {
+    @apply bg-terminal-surface-0 text-primary px-1.5 py-0.5 text-[0.9em] border border-terminal-border;
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    border-radius: 0;
+    white-space: nowrap;
+  }
+  .content pre {
+    @apply bg-terminal-surface-0 overflow-x-auto my-6 text-sm relative;
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    line-height: 1.6;
+    border-radius: 0;
+    padding: 1rem 1.25rem;
+  }
+  /* Lime accent rail on the left edge — terminal-cursor vibe. */
+  .content pre::before {
+    content: '';
+    @apply absolute left-0 top-0 bottom-0 w-1 bg-primary;
+  }
+  .content pre code {
+    @apply bg-transparent p-0 border-0 text-terminal-text;
+    font-size: inherit;
+    white-space: pre;
+  }
+
+  /* Tables — internal grid with cell padding. Edge cells flush horizontally
+     (leftmost: no pl, rightmost: no pr) and at the bottom (last tbody row: no
+     pb), but th keeps balanced vertical padding because the bg highlight needs
+     breathing room above the label. Saves horizontal space inside narrow
+     stacked columns while keeping internal cells legible. */
+  .content table {
+    @apply w-full border-collapse my-6 text-sm;
+  }
+  .content thead {
+    @apply border-b border-terminal-border;
+  }
+  .content th {
+    @apply bg-terminal-surface-0 font-bold font-display uppercase tracking-wider text-[11px] text-terminal-text-secondary;
+    @apply text-left align-bottom px-3 py-2 border-r border-terminal-border;
+  }
+  .content th:first-child { padding-left: 0; }
+  .content th:last-child { padding-right: 0; border-right: 0; }
+  .content td {
+    @apply text-left align-top px-3 py-2 border-r border-b border-terminal-border;
+  }
+  .content td:first-child { padding-left: 0; }
+  .content td:last-child { padding-right: 0; border-right: 0; }
+  .content tbody tr:last-child td { padding-bottom: 0; border-bottom: 0; }
+  .content tbody tr:hover td { @apply bg-terminal-surface-0; }
+
+  .content hr {
+    @apply border-0 my-10 h-0.5;
+    background: linear-gradient(
+      to right,
+      transparent,
+      theme('colors.terminal.border'),
+      transparent
+    );
+  }
+
+  .content img {
+    @apply w-full h-auto my-6 border-2 border-terminal-border;
+    box-shadow: 4px 4px 0px 0px theme('colors.terminal.border');
+  }
+
+  .content kbd {
+    @apply bg-terminal-surface-0 border border-terminal-border-strong text-terminal-text px-1.5 py-0.5 text-xs;
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    border-bottom-width: 2px;
+  }
+}
+
+@layer utilities {
+  .border-3 { border-width: 3px; }
+}
+
+/* Focus ring — accent outline + offset stamp. */
+:focus-visible {
+  outline: 2px solid theme('colors.primary');
+  outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .content { font-size: 1rem; line-height: 1.6; }
+  .terminal-item:hover .title-text {
+    outline: none;
+    box-shadow: none;
+  }
+}

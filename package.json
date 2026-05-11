@@ -1,0 +1,54 @@
+{
+  "name": "andy-note-nuxt",
+  "version": "0.1.0",
+  "description": "Brutalist-terminal Nuxt Content theme for personal notes, guides, and second-brain knowledge bases. Use as a Nuxt layer.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nguyenvanduocit/andy-note-nuxt.git"
+  },
+  "keywords": [
+    "nuxt",
+    "nuxt-theme",
+    "nuxt-layer",
+    "nuxt-content",
+    "second-brain",
+    "knowledge-base",
+    "brutalist",
+    "tailwindcss"
+  ],
+  "files": [
+    "app",
+    "public",
+    "content/index.md",
+    "content/license.md",
+    "nuxt.config.ts",
+    "content.config.ts",
+    "tailwind.config.js",
+    "tsconfig.json"
+  ],
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@floating-ui/vue": "^1.1.11",
+    "@fontsource/literata": "^5.2.8",
+    "@fontsource/space-grotesk": "^5.2.10",
+    "@nuxt/content": "^3.12.0",
+    "@nuxtjs/tailwindcss": "^6.14.0",
+    "better-sqlite3": "^12.6.2",
+    "nuxt": "^4.3.1",
+    "rehype-raw": "^7.0.0",
+    "vue": "^3.5.29",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3",
+    "vite-plugin-ai-annotator": "^1.14.13"
+  }
+}

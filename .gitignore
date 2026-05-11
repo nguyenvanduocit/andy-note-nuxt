@@ -1,0 +1,63 @@
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+
+# Node dependencies
+node_modules
+
+# Logs
+logs
+*.log
+
+# Misc
+.DS_Store
+.fleet
+.idea
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Editor / AI agent local state (do not ship)
+.adal
+.augment
+.codebuddy
+.codex
+.commandcode
+.continue
+.crush
+.factory
+.goose
+.junie
+.kilocode
+.kode
+.mcpjam
+.mux
+.neovate
+.openhands
+.pi
+.pochi
+.qoder
+.qwen
+.roo
+.serena
+.trae
+.vibe
+.windsurf
+.zencoder
+
+# Cloudflare Wrangler cache
+.wrangler/
+
+# Claude Code local-only files (commit settings.json + skills/, ignore the rest)
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# Scratch
+tmp/*
+!tmp/.gitkeep
