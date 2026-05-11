@@ -5,6 +5,14 @@
 // npm package) and override `app.head`, `appConfig.site`, `appConfig.menu`
 // in their child project. All values here are sensible defaults.
 
+import { createResolver } from '@nuxt/kit'
+
+// Resolve paths relative to THIS layer's directory, not the consumer's root.
+// `~/` aliases resolve to the consumer's `srcDir` at runtime, which would
+// (incorrectly) look for theme assets inside the child project. Absolute
+// paths produced here always point back to the layer.
+const { resolve } = createResolver(import.meta.url)
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
@@ -22,11 +30,11 @@ export default defineNuxtConfig({
   },
 
   tailwindcss: {
-    cssPath: '~/assets/css/main.css',
+    cssPath: resolve('./app/assets/css/main.css'),
     viewer: false,
   },
 
-  css: ['~/assets/css/main.css'],
+  css: [resolve('./app/assets/css/main.css')],
 
   content: {
     build: {
