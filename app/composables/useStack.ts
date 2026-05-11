@@ -257,12 +257,49 @@ export function useStack() {
     // Individual links marked as reset-intent: defer to NuxtLink default
     if (anchor.hasAttribute('data-stack-reset')) return
 
-    // Resolve relative hrefs and extract pathname
-    const resolved = new URL(href, window.location.origin)
+    // Hash-only hrefs ("#foo") are ALWAYS in-column anchors regardless of where
+    // the column is mounted in the stack. We cannot resolve them against
+    // window.location.href to get a column-path comparison: when this column
+    // is at fullStack[1+], window.location.href is "/?stack=<col1path>" so the
+    // resolved pathname becomes "/" and the comparison below would treat the
+    // hash as a navigation to root. Handle hash-only as a dedicated branch
+    // first so footnote refs (`<a href="#user-content-fn-1">`), back-refs, TOC
+    // anchors, and heading refs all scroll inside this column, not navigate.
+    if (href.startsWith('#')) {
+      // preventDefault alone is not enough: Nuxt Content's ProseA renders
+      // markdown `<a>` as `<NuxtLink>`, whose bubble-phase click handler
+      // ignores defaultPrevented and calls router.push() — which resolves
+      // a hash-only href against route.path ("/" when this column is in
+      // stack mode) and drops query.stack as a side effect, hard-navigating
+      // to the home page. stopPropagation() in this capture-phase handler
+      // prevents NuxtLink's bubble-phase listener from running at all.
+      event.preventDefault()
+      event.stopPropagation()
+      const targetId = decodeURIComponent(href.slice(1))
+      // Scope the lookup to this column so duplicate ids across columns
+      // (possible when two columns render the same article) don't scroll
+      // the wrong one.
+      const columnEl = anchor.closest('[data-column-index]') as HTMLElement | null
+      const target = columnEl?.querySelector<HTMLElement>(`[id="${CSS.escape(targetId)}"]`)
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return
+    }
+
+    // Resolve path-relative or absolute hrefs. Base is window.location.href —
+    // safe here because we've already handled hash-only above.
+    const resolved = new URL(href, window.location.href)
     const pathname = resolved.pathname
 
-    // Anchor-only link within same column (e.g. href="#section" or href="/current#section")
-    if (pathname === fullStack.value[fromIndex] && resolved.hash) return
+    // "/current-path#section"-style anchor that points back to this column's
+    // own path: scroll within this column instead of navigating.
+    if (pathname === fullStack.value[fromIndex] && resolved.hash) {
+      event.preventDefault()
+      const targetId = decodeURIComponent(resolved.hash.slice(1))
+      const columnEl = anchor.closest('[data-column-index]') as HTMLElement | null
+      const target = columnEl?.querySelector<HTMLElement>(`[id="${CSS.escape(targetId)}"]`)
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return
+    }
 
     event.preventDefault()
     pushColumn(pathname, fromIndex)
