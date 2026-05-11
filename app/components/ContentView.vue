@@ -388,9 +388,10 @@ const sectionIndex = computed(() => {
     <p class="text-sm mt-2">This page doesn't exist or has been moved.</p>
   </div>
 
-  <div v-else>
-    <!-- Sticky terminal section header — `/XX. TITLE [BADGE]` motif from onepercentplus -->
-    <div class="section-card-header">
+  <div v-else class="flex flex-col h-full">
+    <!-- Column header — sits outside the scroll container so the scrollbar
+         never overlaps it. flex-none keeps it at fixed height. -->
+    <div class="section-card-header flex-none">
       <div class="flex items-center justify-between gap-3">
         <h2 class="text-sm font-bold uppercase tracking-tight flex items-center gap-2 truncate">
           <span class="text-primary">/</span>
@@ -405,99 +406,103 @@ const sectionIndex = computed(() => {
       </div>
     </div>
 
-    <!-- LIST VIEW: any path that has children renders as a section listing. -->
-    <template v-if="isList">
-      <div v-if="hasRenderedBody" class="content px-5 pt-6">
-        <ContentRenderer :value="renderedPage" />
-      </div>
+    <!-- Scrollable content area — grows to fill remaining height. Scrollbar
+         is scoped here, so it never intrudes into the header above. -->
+    <div class="flex-1 overflow-y-auto min-h-0">
+      <!-- LIST VIEW: any path that has children renders as a section listing. -->
+      <template v-if="isList">
+        <div v-if="hasRenderedBody" class="content px-5 pt-6">
+          <ContentRenderer :value="renderedPage" />
+        </div>
 
-      <!-- Sections sub-grouping (folders) -->
-      <section v-if="hierarchy.sections.length > 0" aria-label="Sections">
-        <h3 class="section-heading mx-5">Folders</h3>
-        <ul class="flex flex-col py-2">
-          <li
-            v-for="(section, index) in hierarchy.sections"
-            :key="section.path"
-            :class="['terminal-item min-w-0', isDrilled(section.path) && 'terminal-item--active']"
-          >
-            <NuxtLink
-              :to="section.path"
-              class="flex items-baseline min-w-0 w-full"
+        <!-- Sections sub-grouping (folders) -->
+        <section v-if="hierarchy.sections.length > 0" aria-label="Sections">
+          <h3 class="section-heading mx-5">Folders</h3>
+          <ul class="flex flex-col py-2">
+            <li
+              v-for="(section, index) in hierarchy.sections"
+              :key="section.path"
+              :class="['terminal-item min-w-0', isDrilled(section.path) && 'terminal-item--active']"
             >
-              <span class="title-text font-bold uppercase whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-sm">
-                {{ section.title }}
-              </span>
-              <span class="dotted-leader flex-shrink" />
-              <span class="tabular-nums font-bold font-mono text-[10px] flex-shrink-0 text-terminal-text-faint mr-4">
-                {{ String(section.count).padStart(2, '0') }}
-              </span>
-            </NuxtLink>
-          </li>
-        </ul>
-      </section>
-
-      <!-- Root file listing (flat articles within current section) -->
-      <section v-if="hierarchy.rootFiles.length > 0" aria-label="Articles">
-        <h3 class="section-heading mx-5">
-          <span>Articles</span>
-          <span
-            v-if="articlesUniformMeta"
-            :class="['ml-auto game-chip', articlesUniformGameVariant]"
-          >
-            {{ articlesUniformMeta }}
-          </span>
-        </h3>
-        <ul class="flex flex-col py-2">
-          <li
-            v-for="(file, index) in hierarchy.rootFiles"
-            :key="file.path"
-            :class="['terminal-item min-w-0', isDrilled(file.path) && 'terminal-item--active']"
-          >
-            <NuxtLink
-              :to="file.path"
-              class="flex items-baseline min-w-0 w-full"
-            >
-              <span class="title-text font-bold uppercase whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-sm">
-                {{ file.title || slugToTitle(file.path.split('/').pop() || '') }}
-              </span>
-              <span
-                v-if="!articlesUniformMeta && metaSegments(file).length"
-                :class="['game-chip ml-2', gameChipVariant(file)]"
+              <NuxtLink
+                :to="section.path"
+                class="flex items-baseline min-w-0 w-full"
               >
-                {{ metaSegments(file).join(' · ') }}
-              </span>
-              <span class="dotted-leader flex-shrink" />
-              <span class="tabular-nums font-bold font-mono text-[10px] flex-shrink-0 text-terminal-text-faint mr-4">
-                {{ String(hierarchy.rootFiles.length - index).padStart(2, '0') }}
-              </span>
-            </NuxtLink>
-          </li>
-        </ul>
-      </section>
-    </template>
+                <span class="title-text font-bold uppercase whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-sm">
+                  {{ section.title }}
+                </span>
+                <span class="dotted-leader flex-shrink" />
+                <span class="tabular-nums font-bold font-mono text-[10px] flex-shrink-0 text-terminal-text-faint mr-4">
+                  {{ String(section.count).padStart(2, '0') }}
+                </span>
+              </NuxtLink>
+            </li>
+          </ul>
+        </section>
 
-    <!-- ARTICLE VIEW: only reached when a page exists with content body and no children. -->
-    <article v-else-if="page" class="px-5 py-6 md:py-8 max-w-[75ch]">
-      <header class="mb-8 pb-5 border-b-2 border-dashed border-terminal-border">
-        <h1 class="text-2xl md:text-3xl font-display font-bold uppercase tracking-tight leading-tight text-terminal-text mb-3">
-          {{ displayTitle }}
-        </h1>
-
-        <ul v-if="allTags.length" class="flex flex-wrap gap-2 mt-3">
-          <li v-for="tag in allTags" :key="tag.value">
-            <NuxtLink
-              :to="`/tags/${tag.value}`"
-              :class="['tag-badge', tag.important && 'tag-badge--active']"
+        <!-- Root file listing (flat articles within current section) -->
+        <section v-if="hierarchy.rootFiles.length > 0" aria-label="Articles">
+          <h3 class="section-heading mx-5">
+            <span>Articles</span>
+            <span
+              v-if="articlesUniformMeta"
+              :class="['ml-auto game-chip', articlesUniformGameVariant]"
             >
-              {{ toTitleCase(tag.value) }}
-            </NuxtLink>
-          </li>
-        </ul>
-      </header>
+              {{ articlesUniformMeta }}
+            </span>
+          </h3>
+          <ul class="flex flex-col py-2">
+            <li
+              v-for="(file, index) in hierarchy.rootFiles"
+              :key="file.path"
+              :class="['terminal-item min-w-0', isDrilled(file.path) && 'terminal-item--active']"
+            >
+              <NuxtLink
+                :to="file.path"
+                class="flex items-baseline min-w-0 w-full"
+              >
+                <span class="title-text font-bold uppercase whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-sm">
+                  {{ file.title || slugToTitle(file.path.split('/').pop() || '') }}
+                </span>
+                <span
+                  v-if="!articlesUniformMeta && metaSegments(file).length"
+                  :class="['game-chip ml-2', gameChipVariant(file)]"
+                >
+                  {{ metaSegments(file).join(' · ') }}
+                </span>
+                <span class="dotted-leader flex-shrink" />
+                <span class="tabular-nums font-bold font-mono text-[10px] flex-shrink-0 text-terminal-text-faint mr-4">
+                  {{ String(hierarchy.rootFiles.length - index).padStart(2, '0') }}
+                </span>
+              </NuxtLink>
+            </li>
+          </ul>
+        </section>
+      </template>
 
-      <div class="content">
-        <ContentRenderer :value="renderedPage" />
-      </div>
-    </article>
+      <!-- ARTICLE VIEW: only reached when a page exists with content body and no children. -->
+      <article v-else-if="page" class="px-5 py-6 md:py-8 max-w-[75ch]">
+        <header class="mb-8 pb-5 border-b-2 border-dashed border-terminal-border">
+          <h1 class="text-2xl md:text-3xl font-display font-bold uppercase tracking-tight leading-tight text-terminal-text mb-3">
+            {{ displayTitle }}
+          </h1>
+
+          <ul v-if="allTags.length" class="flex flex-wrap gap-2 mt-3">
+            <li v-for="tag in allTags" :key="tag.value">
+              <NuxtLink
+                :to="`/tags/${tag.value}`"
+                :class="['tag-badge', tag.important && 'tag-badge--active']"
+              >
+                {{ toTitleCase(tag.value) }}
+              </NuxtLink>
+            </li>
+          </ul>
+        </header>
+
+        <div class="content">
+          <ContentRenderer :value="renderedPage" />
+        </div>
+      </article>
+    </div>
   </div>
 </template>

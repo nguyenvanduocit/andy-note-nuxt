@@ -6,18 +6,6 @@ const props = defineProps<{
 
 const { fullStack, handleStackClick, scrollToColumn } = useStack()
 
-/**
- * Only the rightmost column carries border-r. All cols carry border-l, so
- * every internal boundary (side-by-side, peek-stack) gets exactly one 3px
- * line — the next col's border-l. Without the conditional border-r, the
- * last col's right edge would have nothing closing it (no neighbor to
- * provide a border-l), so the active card would look open on the right.
- * Putting border-r on every col instead would double-up at side-by-side
- * boundaries (6px) while peek-stack stayed at 3px (z-index occludes one
- * side) — that thickness inconsistency is what produced the earlier
- * "lúc dày lúc mỏng" jitter.
- */
-const isLast = computed(() => props.index === fullStack.value.length - 1)
 
 /**
  * Click on a column performs two things in order:
@@ -37,20 +25,12 @@ function onClick(event: MouseEvent) {
 </script>
 
 <template>
-  <!--
-    Border rule (see isLast computed): every col has border-l-[3px], only the
-    rightmost col additionally has border-r-[3px]. Single static color
-    (border-terminal-border) — no active-state color swap. The visual cue for
-    "this is the active card" is geometric (the card is right-aligned at the
-    viewport's right edge), not chromatic.
-  -->
   <div
-    class="stacked-column flex flex-col h-full overflow-hidden bg-terminal-bg border-l-[3px] border-terminal-border"
-    :class="{ 'border-r-[3px]': isLast }"
+    class="stacked-column flex flex-col h-full overflow-hidden bg-terminal-bg border-r-[3px] border-terminal-border"
     :data-column-index="index"
     :style="{ '--col-idx': index }"
   >
-    <div class="flex-1 overflow-y-auto" @click.capture="onClick">
+    <div class="flex-1 min-h-0" @click.capture="onClick">
       <!--
         :key="path" forces ContentView to remount when this slot's path
         prop changes. Without it, a slot whose StackedColumns key is the
@@ -84,6 +64,11 @@ function onClick(event: MouseEvent) {
   position: sticky;
   left: calc(var(--col-idx, 0) * var(--stack-peek, 48px));
   z-index: var(--col-idx, 0);
+  /* Left outline via box-shadow: takes no layout space, so when two columns
+     are adjacent the left shadow of the later column (higher z-index) paints
+     directly over the earlier column's right border — unified table-cell look.
+     When a column stands alone, it renders as a clean left border. */
+  box-shadow: -3px 0 0 #474541;
 }
 
 @media (max-width: 767px) {

@@ -24,7 +24,7 @@
 @layer base {
   /* Layout/spacing tokens that components reference via inline style. */
   :root {
-    --column-width: 640px;
+    --column-width: 670px;
     --column-min-width: 540px;
     --content-width: 720px;
     --content-width-wide: 960px;
@@ -93,10 +93,10 @@
 @layer components {
   /* ---------- Brutalist primitives ---------- */
 
-  /* Section header used inside stacked-column scroll bodies.
-     Sticky to the column top, with the `/XX. TITLE [BADGE]` motif. */
+  /* Section header pinned above the column's scroll body via flex layout.
+     Lives outside the overflow container, so the scrollbar never overlaps it. */
   .section-card-header {
-    @apply px-4 py-3 border-b-[3px] border-terminal-border sticky top-0 z-10 bg-terminal-bg;
+    @apply px-4 py-3 border-b-[3px] border-terminal-border bg-terminal-bg;
   }
 
   /* Dotted leader (between list-row title and counter). 2px dashes,
