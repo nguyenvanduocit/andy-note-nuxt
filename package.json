@@ -24,7 +24,6 @@
     "content/index.md",
     "content/license.md",
     "nuxt.config.ts",
-    "content.config.ts",
     "tailwind.config.js",
     "tsconfig.json"
   ],

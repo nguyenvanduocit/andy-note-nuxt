@@ -64,6 +64,29 @@ Edit `app/app.config.ts` for branding/menu, `nuxt.config.ts` for `<title>`, and 
 | `content/index.md` | Default landing page |
 | `content/license.md` | Default license page (override in your child project) |
 
+**Not included** — the layer intentionally does NOT ship a `content.config.ts`. Schemas are project-specific, and Nuxt Content v3.13+ requires the consumer to install `zod` + `zod-to-json-schema` themselves. Your child project owns the schema. A minimal starter looks like:
+
+```ts
+// content.config.ts in YOUR project
+import { defineCollection, defineContentConfig, z } from '@nuxt/content'
+
+export default defineContentConfig({
+  collections: {
+    content: defineCollection({
+      type: 'page',
+      source: '**/*.md',
+      schema: z.object({
+        description: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+        created: z.string().optional(),
+        updated: z.string().optional(),
+        // ...add fields as your notes evolve
+      }),
+    }),
+  },
+})
+```
+
 ## Override anything
 
 Nuxt Layers deep-merge child over parent. Override semantics:
