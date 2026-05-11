@@ -246,11 +246,11 @@
     @apply font-display font-bold uppercase tracking-tight text-2xl md:text-3xl mt-10 mb-4;
   }
   .content h2 {
-    @apply font-display font-bold uppercase tracking-tight text-lg md:text-xl mt-10 mb-4;
+    @apply font-display font-bold uppercase tracking-tight text-xl md:text-2xl mt-10 mb-4;
     font-family: 'Space Grotesk', sans-serif;
   }
   .content h3 {
-    @apply font-display font-bold uppercase tracking-tight text-lg mt-8 mb-3;
+    @apply font-display font-bold uppercase tracking-tight text-base md:text-lg mt-8 mb-3;
     font-family: 'Space Grotesk', sans-serif;
   }
   .content h4, .content h5, .content h6 {

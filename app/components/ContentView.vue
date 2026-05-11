@@ -479,7 +479,7 @@ const sectionIndex = computed(() => {
     <!-- ARTICLE VIEW: only reached when a page exists with content body and no children. -->
     <article v-else-if="page" class="px-5 py-6 md:py-8 max-w-[75ch]">
       <header class="mb-8 pb-5 border-b-2 border-dashed border-terminal-border">
-        <h1 class="text-xl md:text-2xl font-display font-bold uppercase tracking-tight leading-tight text-terminal-text mb-3">
+        <h1 class="text-2xl md:text-3xl font-display font-bold uppercase tracking-tight leading-tight text-terminal-text mb-3">
           {{ displayTitle }}
         </h1>
 
