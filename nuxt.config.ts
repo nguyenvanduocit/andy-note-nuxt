@@ -18,7 +18,6 @@ export default defineNuxtConfig({
   // Browser-feedback overlay — disable in child by setting `aiAnnotator: false`.
   aiAnnotator: {
     port: 7318,
-    autoSetupMcp: true,
     verbose: false,
   },
 
