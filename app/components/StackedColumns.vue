@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const containerRef = useTemplateRef<HTMLDivElement>('container')
-const { fullStack, activeIndex, stack, isMobile } = useStack()
+const { fullStack, activeIndex, stack, isMobile, scrollToColumn } = useStack()
 const route = useRoute()
 const router = useRouter()
 
@@ -75,6 +75,10 @@ onMounted(() => {
   )
   observeAllColumns()
   maybeRedirectMobile()
+
+  if (!isMobile.value && fullStack.value.length > 1) {
+    scrollToColumn(fullStack.value.length - 1)
+  }
 })
 
 watch(isMobile, (now, prev) => {
