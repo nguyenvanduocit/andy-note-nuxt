@@ -359,6 +359,7 @@
     @apply bg-terminal-surface-0 p-4 my-6 italic text-terminal-text-secondary;
   }
   .content blockquote p { @apply mb-0; }
+  .content blockquote p:first-child { @apply mt-0; }
 
   /* Code — inline keeps a thin border to look tag-like; pre block relies on
      bg + lime rail accent (no frame, no shadow). */
