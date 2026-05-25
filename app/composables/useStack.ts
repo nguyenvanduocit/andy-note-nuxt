@@ -21,7 +21,16 @@ function useIsMobile(): Ref<boolean> {
 }
 
 /**
- * Normalize a path string: strip query/hash, ensure leading slash, collapse double slashes.
+ * Normalize a path string: strip query/hash, ensure leading slash, collapse
+ * double slashes, strip trailing slash on non-root paths.
+ *
+ * Trailing-slash strip matters because static hosts (Cloudflare Pages, Netlify
+ * with `pretty_urls`, GitHub Pages with directories) 308-redirect `/foo` to
+ * `/foo/`. The browser URL ends in `/`; `useRoute().path` reflects that;
+ * `queryCollection().where('path', '=', '/foo/')` returns null because
+ * Nuxt Content stores `index.md` paths without the trailing slash.
+ * Normalizing here keeps the path equal to the stored shape regardless of
+ * how the host rewrote the request URL.
  */
 function normalizePath(path: string): string {
   // Strip query and hash using regex so split()[0] is always defined
@@ -29,7 +38,9 @@ function normalizePath(path: string): string {
   // Ensure leading slash
   const withSlash = withoutQuery.startsWith('/') ? withoutQuery : `/${withoutQuery}`
   // Collapse double slashes
-  return withSlash.replace(/\/\/+/g, '/')
+  const collapsed = withSlash.replace(/\/\/+/g, '/')
+  // Strip trailing slash unless this IS the root path
+  return collapsed.length > 1 ? collapsed.replace(/\/$/, '') : collapsed
 }
 
 /**
@@ -68,8 +79,10 @@ export function useStack() {
     return arr.filter((p): p is string => typeof p === 'string' && p.length > 0)
   })
 
-  /** [route.path, ...stack] — all column paths including column 0 */
-  const fullStack = computed<string[]>(() => [route.path, ...stack.value])
+  /** [route.path, ...stack] — all column paths including column 0.
+   *  route.path passes through normalizePath so a host-injected trailing
+   *  slash (e.g. CF Pages 308 `/foo` → `/foo/`) doesn't break content lookup. */
+  const fullStack = computed<string[]>(() => [normalizePath(route.path), ...stack.value])
 
   /** Currently focused column index — updated by callers (e.g. IntersectionObserver in US-005) */
   const activeIndex = ref<number>(0)
