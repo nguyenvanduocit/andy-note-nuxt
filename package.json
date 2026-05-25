@@ -20,7 +20,14 @@
     "tailwindcss"
   ],
   "files": [
-    "app",
+    "app/app.config.ts",
+    "app/app.vue",
+    "app/assets",
+    "app/components",
+    "app/composables",
+    "app/layouts",
+    "app/pages",
+    "app/types",
     "public",
     "content/index.md",
     "content/license.md",

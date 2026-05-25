@@ -14,6 +14,6 @@ export default defineAppConfig({
     tagline: 'A second-brain theme for Nuxt Content',
     author: 'andy-note-nuxt',
     themeColor: '#ff7b6b',
-    logo: '/logo.png',
+    logo: '/logo.svg',
   },
 })

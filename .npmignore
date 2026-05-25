@@ -1,0 +1,25 @@
+# When `files` in package.json lists a directory (e.g. "app"), npm ships
+# its full subtree. `.npmignore` patches the leak — excludes dev/AI-agent
+# artifacts that get nested under `app/` (or anywhere) and would otherwise
+# end up in the published tarball.
+#
+# Verify with `npm pack --dry-run` before tagging a release.
+
+# Claude Code local config (skills, settings, scheduled tasks)
+.claude/
+**/.claude/
+
+# Other AI agent editors (mirror .gitignore's editor block)
+.codex/
+.cursor/
+.windsurf/
+.codebuddy/
+.continue/
+.augment/
+.serena/
+
+# OS / editor artifacts
+.DS_Store
+**/.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64" shape-rendering="crispEdges">
+  <!-- Brutalist stamp logo — coral block + wordmark in warm off-white.
+       Stamp shadow uses border-strong (#5a5854) at 4px offset, matching
+       the `shadow-stamp` token in tailwind.config.js. -->
+  <rect x="4" y="12" width="48" height="48" fill="#5a5854"/>
+  <rect x="0" y="8" width="48" height="48" fill="#ff7b6b"/>
+  <text x="64" y="42"
+        font-family="'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif"
+        font-size="28"
+        font-weight="700"
+        letter-spacing="0.02em"
+        fill="#d5cfc5">andy/notes</text>
+</svg>
