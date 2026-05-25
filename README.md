@@ -71,7 +71,7 @@ Edit `app/app.config.ts` for branding/menu, `nuxt.config.ts` for `<title>`, and 
 | `content.config.ts` | Minimal generic schema (7 fields — see "Schema" below) |
 | `content/index.md` | Default landing page |
 | `content/license.md` | Default license page |
-| `content/quick-start.md`, `content/guides/`, `content/reference/` | Theme's own docs — override or delete in your child |
+| `content/quick-start.md`, `content/guides/`, `content/reference/` | Theme's own docs (ship only when extending via `github:` — npm publishes only `content/index.md` + `content/license.md`). Override or delete in your child. |
 
 ## Override anything
 

@@ -28,7 +28,7 @@ Do not drift from these without explicit instruction:
 
 - **Stamp shadow** — flat offset, no blur. `4px 4px 0px` (`shadow-stamp`), `2px 2px 0px` (`-sm`), `6px 6px 0px` (`-lg`). Accent uses coral `#ff7b6b` (`shadow-stamp-accent`).
 - **Palette** — coral accent `#ff7b6b`; warm-dark surfaces (`#2a2a28`, `#2e2f2c`, `#3b3c39`); warm off-white text `#d5cfc5`. Full tokens in `tailwind.config.js`.
-- **Typography** — Space Grotesk (display), Literata (prose). Self-hosted via `@fontsource-variable/*` — do not introduce Google Fonts imports.
+- **Typography** — Space Grotesk (display), Literata (prose). Self-hosted via `@fontsource/*` (static weights, imported in `app/assets/css/main.css`) — do not introduce Google Fonts imports.
 - No rounded corners beyond what's already used, no soft shadows, no gradients.
 
 ## Code style

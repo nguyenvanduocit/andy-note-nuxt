@@ -1,6 +1,6 @@
 ---
 title: "Quick Start"
-description: "Cài đặt, chạy dev server, và publish trang đầu tiên trong dưới 5 phút."
+description: "Install, run the dev server, and publish your first page in under 5 minutes."
 tags: ["setup", "getting-started"]
 created: 2026-05-20
 updated: 2026-05-25
@@ -8,11 +8,11 @@ updated: 2026-05-25
 
 # Quick Start
 
-Trang này là path ngắn nhất từ zero → một site stacked-column chạy được. Mọi step đều có command copy-paste — không cần đọc reference.
+The shortest path from zero → a working stacked-column site. Every step has a copy-paste command — no need to detour through the reference docs.
 
-## 1. Tạo project con
+## 1. Create a child project
 
-`andy-note-nuxt` là **Nuxt 4 theme layer**. Bạn không clone trực tiếp — bạn tạo một project mới rồi extend layer này:
+`andy-note-nuxt` is a **Nuxt 4 theme layer**. You don't clone it directly — you create a fresh project and extend the layer:
 
 ```bash
 bunx nuxi init my-notes
@@ -20,7 +20,7 @@ cd my-notes
 bun add github:nguyenvanduocit/andy-note-nuxt
 ```
 
-Mở `nuxt.config.ts` của project con, thêm:
+Open the child project's `nuxt.config.ts` and add:
 
 ```ts
 export default defineNuxtConfig({
@@ -28,41 +28,40 @@ export default defineNuxtConfig({
 })
 ```
 
-## 2. Viết note đầu tiên
+## 2. Write your first note
 
-Tạo `content/hello.md`:
+Create `content/hello.md`:
 
 ```markdown
 ---
 title: "Hello"
-description: "Note đầu tiên của tôi."
+description: "My first note."
 ---
 
 # Hello
 
-Đây là note đầu tiên. Click vào bất kỳ link nội bộ nào dưới đây để
-thấy nó push một column mới sang bên phải:
+This is the first note. Click any internal link below and watch it push a
+new column to the right:
 
 - [Quick Start](/quick-start)
 - [Getting Started](/guides/getting-started)
 ```
 
-## 3. Chạy dev
+## 3. Run dev
 
 ```bash
 bun dev
 ```
 
-Mở `http://localhost:3000` — bạn sẽ thấy section listing của tất cả file
-markdown bạn vừa tạo, render theo style brutalist-terminal.
+Open `http://localhost:3000` — you'll see a section listing of every markdown file you just created, rendered in the brutalist-terminal style.
 
-## 4. Đẩy lên hosting
+## 4. Ship to hosting
 
-Theme generate ra static HTML, deploy ở đâu cũng được:
+The theme generates static HTML, so it deploys anywhere:
 
 ```bash
 bun generate
-# Output trong .output/public/
+# Output lives in .output/public/
 ```
 
-Drop folder đó lên Cloudflare Pages / Netlify / Vercel / GitHub Pages — xong.
+Drop that folder onto Cloudflare Pages / Netlify / Vercel / GitHub Pages — done.
