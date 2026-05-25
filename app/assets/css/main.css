@@ -98,6 +98,101 @@
     @apply px-4 py-3 border-b-[3px] border-terminal-border bg-terminal-bg;
   }
 
+  /* Copy + AI-deep-link split button — true button-group pattern. The
+     outer `.copy-actions` wrapper owns the border, background, and focus
+     stamp-shadow; child `.copy-btn` halves are border-less segments
+     separated only by an internal vertical divider. This eliminates the
+     double-border seam that earlier `margin: -1px` hacks couldn't fully
+     hide. Primary half carries the "Copy" / "Copied" / "Failed" text
+     label; `.copy-btn--menu` is the attached caret half opening
+     `.copy-menu`. `data-state` flips the primary half to a filled
+     coral affordance during the brief success window. */
+  .copy-actions {
+    @apply relative inline-flex items-stretch shrink-0 border border-terminal-border bg-terminal-bg transition-colors;
+  }
+  /* Group-level focus ring — single stamp shadow on the wrapper instead
+     of per-button shadows, so the focused half doesn't "lift" away from
+     its sibling and break the fused appearance. */
+  .copy-actions:focus-within {
+    @apply border-primary;
+    box-shadow: 2px 2px 0 0 theme('colors.primary');
+  }
+  /* Borderless segment. Width is fixed at the widest label ("Copied" /
+     "Failed", 6 chars in mono bold 10px) so "Copy" doesn't reflow when
+     state flips and the pair stays balanced with the icon-narrow caret. */
+  .copy-btn {
+    @apply inline-flex items-center justify-center text-terminal-text-secondary cursor-pointer transition-colors;
+    background: transparent;
+    border: 0;
+    height: 22px;
+    width: 48px;
+    padding: 0;
+  }
+  /* Internal divider — paints on the trailing edge of every segment
+     except the last, so it shows once between Copy and the caret half
+     and never leaks outside the group. */
+  .copy-btn:not(:last-child) {
+    border-right: 1px solid theme('colors.terminal.border');
+  }
+  .copy-btn--menu {
+    width: 22px;
+  }
+  .copy-btn__label {
+    @apply font-mono font-bold uppercase tracking-tight;
+    font-size: 10px;
+    line-height: 1;
+  }
+  .copy-btn__caret {
+    width: 10px;
+    height: 7px;
+    display: block;
+    transition: transform 140ms ease;
+  }
+  .copy-btn__caret--open {
+    transform: rotate(180deg);
+  }
+  .copy-btn:hover,
+  .copy-btn[aria-expanded='true'] {
+    @apply text-primary;
+  }
+  .copy-btn:focus-visible {
+    @apply outline-none text-primary;
+  }
+  .copy-btn[data-state='copied'] {
+    @apply bg-primary text-terminal-bg;
+  }
+  .copy-btn[data-state='error'] {
+    @apply text-terminal-text-muted;
+  }
+
+  /* Dropdown menu — sharp-edged, stamp-shadow, mono. Teleported to <body>
+     so it escapes any column overflow clip; positioning comes from inline
+     styles written by Floating-UI's `useFloating`. We only own the visual
+     surface (border, shadow, palette, sizing) — never the coords. z-index
+     sits above stacked-column borders, which top out near 20–30 in practice. */
+  .copy-menu {
+    @apply bg-terminal-bg border-2 border-terminal-border;
+    position: absolute;
+    min-width: 168px;
+    box-shadow: 4px 4px 0 0 theme('colors.primary');
+    z-index: 100;
+  }
+  .copy-menu__item {
+    @apply flex items-center gap-2 px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-widest text-terminal-text transition-colors no-underline;
+  }
+  .copy-menu__item + .copy-menu__item {
+    @apply border-t border-terminal-border;
+  }
+  .copy-menu__item:hover {
+    @apply bg-primary text-terminal-bg;
+  }
+  .copy-menu__arrow {
+    @apply text-terminal-text-faint;
+  }
+  .copy-menu__item:hover .copy-menu__arrow {
+    @apply text-terminal-bg;
+  }
+
   /* Dotted leader (between list-row title and counter). 2px dashes,
      positioned slightly above baseline so it visually aligns with letter midline. */
   .dotted-leader {
@@ -205,13 +300,18 @@
     padding-right: calc(0.375rem - 1px);
   }
 
-  /* Section heading inside list-view (e.g. "Sections" / "Articles"). */
+  /* Section heading inside list-view (e.g. "Sections" / "Articles"). The
+     leading icon (clock / folder / document) is inlined as SVG in the
+     template so each section gets a semantic glyph instead of a generic
+     coral square. */
   .section-heading {
     @apply text-xs font-bold uppercase tracking-widest-lg text-terminal-text-muted mt-8 mb-3 pb-2 border-b border-terminal-border flex items-center gap-2;
   }
-  .section-heading::before {
-    content: '';
-    @apply w-2 h-2 bg-primary;
+  .section-heading__icon {
+    @apply text-primary shrink-0;
+    width: 14px;
+    height: 14px;
+    display: block;
   }
 
   /* Meta row (author · date · tags) — separated by middle dot. */
@@ -481,4 +581,58 @@
     outline: none;
     box-shadow: none;
   }
+}
+
+/* ---------- Brutalist toaster (vue-sonner) ----------
+   vue-sonner ships its own CSS via `vue-sonner/style.css` (loaded by the
+   nuxt module). We override the exposed CSS variables + a few structural
+   props so toasts look like the rest of the surface: sharp corners, stamp
+   offset shadow, monospace, terminal palette. Selectors target the
+   `data-sonner-*` attribute tree so they win over the package defaults
+   without `!important`. */
+[data-sonner-toaster] {
+  --border-radius: 0;
+  --normal-bg: theme('colors.terminal.surface.0');
+  --normal-border: theme('colors.terminal.border');
+  --normal-text: theme('colors.terminal.text');
+  --success-bg: theme('colors.terminal.surface.0');
+  --success-border: theme('colors.primary');
+  --success-text: theme('colors.terminal.text');
+  --error-bg: theme('colors.terminal.surface.0');
+  --error-border: theme('colors.terminal.text-muted');
+  --error-text: theme('colors.terminal.text');
+  font-family: theme('fontFamily.display');
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'] {
+  border-radius: 0;
+  border-width: 2px;
+  box-shadow: 4px 4px 0 0 theme('colors.terminal.border');
+  padding: 14px 16px;
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'][data-type='success'] {
+  box-shadow: 4px 4px 0 0 theme('colors.primary');
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'][data-type='error'] {
+  box-shadow: 4px 4px 0 0 theme('colors.terminal.text-muted');
+}
+[data-sonner-toaster] [data-sonner-toast] [data-title] {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 12px;
+}
+[data-sonner-toaster] [data-sonner-toast] [data-description] {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: theme('colors.terminal.text-muted') !important;
+  margin-top: 2px;
+  letter-spacing: 0.01em;
+}
+/* Icon column — recolor the built-in success/error SVG so it tracks our palette
+   instead of the package's saturated greens/reds. */
+[data-sonner-toaster] [data-sonner-toast][data-type='success'] [data-icon] {
+  color: theme('colors.primary');
+}
+[data-sonner-toaster] [data-sonner-toast][data-type='error'] [data-icon] {
+  color: theme('colors.terminal.text-muted');
 }

@@ -1,4 +1,12 @@
 <script setup lang="ts">
+// `minimark` ships with @nuxt/content as a transitive dep — its body field is
+// minimark AST. `stringify` converts that AST back to markdown faithfully, so we
+// can produce a copy-friendly markdown blob without forcing consumers to enable
+// `rawbody` in their collection schema. See https://content.nuxt.com/docs/integrations/llms.
+import { stringify as stringifyMinimark } from 'minimark/stringify'
+import { toast } from 'vue-sonner'
+import { useFloating, offset, flip, shift, autoUpdate } from '@floating-ui/vue'
+
 interface ContentNode {
   path: string
   title?: string
@@ -114,7 +122,12 @@ const { data: allChildren } = await useAsyncData(`children-${path.value}`, () =>
     .where('path', 'LIKE', `${childrenPrefix}%`)
     .where('path', '<>', path.value)
     .where('path', 'NOT LIKE', '%/_index')
-    .where('document_type', '<>', 'convention')
+    // The convention filter used to live here as a SQL `where`, but SQL's
+    // three-valued logic treats `NULL <> 'convention'` as NULL (not true),
+    // so any row whose schema doesn't set document_type — i.e. most rows —
+    // got silently filtered out and listings rendered as empty article
+    // views. The client-side hierarchy filter (`!== 'convention'`) handles
+    // this correctly in JS where `undefined !== 'convention'` is true.
     .select('path', 'title', 'description', 'document_type', 'status', 'budget_tier', 'game', 'league', 'patch', 'build_tags', 'ratings', 'strategy_tier', 'profit_per_hour', 'investment_tier', 'updated', 'created')
     .all()
 })
@@ -412,17 +425,222 @@ const displayTitle = computed(() => {
   return last ? slugToTitle(last) : 'Home'
 })
 
-// Section path mapping: column index/badge derived from path depth so each column gets a
-// distinct `/XX. TITLE [BADGE]` header reflecting its place in the navigation hierarchy.
-const sectionBadge = computed(() => {
-  const segments = path.value.split('/').filter(Boolean)
-  if (segments.length === 0) return 'INDEX'
-  return segments[0]!.toUpperCase().slice(0, 12)
-})
-
 const sectionIndex = computed(() => {
   const segments = path.value.split('/').filter(Boolean)
   return segments.length === 0 ? 0 : segments.length
+})
+
+// Copy-as-markdown for the column's content.
+//
+// Strategy: produce the *fullest* markdown the column has access to.
+//
+//   1. If `page.rawbody` is present (consumer opted into it via collection
+//      schema — see https://content.nuxt.com/docs/integrations/llms), prefer
+//      it: it's a byte-faithful copy of the original `.md` source.
+//   2. Otherwise compose: `# Title` + description + stringified body
+//      (minimark AST → markdown) + listing blocks (Latest / Folders / Articles).
+//      Stringify is lossy at the edges (custom MDC components may not round-trip
+//      perfectly), but matches the rendered content closely enough for LLM
+//      ingestion and clipboard sharing.
+
+type CopyState = 'idle' | 'copied' | 'error'
+const copyState = ref<CopyState>('idle')
+let copyResetTimer: ReturnType<typeof setTimeout> | null = null
+
+function buildMarkdown(): string {
+  const raw = (page.value as any)?.rawbody as string | undefined
+  if (typeof raw === 'string' && raw.trim().length > 0) {
+    const trimmed = raw.trimStart()
+    // Author already wrote a leading `# Heading` → trust it. Otherwise prepend
+    // displayTitle so the copy never lands on the clipboard headless.
+    return trimmed.startsWith('# ') ? raw : `# ${displayTitle.value}\n\n${raw}`
+  }
+
+  const lines: string[] = [`# ${displayTitle.value}`, '']
+
+  const desc = (page.value as any)?.description
+  if (desc) {
+    lines.push(String(desc).trim(), '')
+  }
+
+  const body = (page.value as any)?.body
+  if (isMinimarkBody(body) && body.value.length > 0) {
+    // If the body opens with the same H1 as displayTitle, drop it — we already
+    // emitted one above; otherwise leading H2/etc. should be preserved.
+    const skipFirst = !!bodyLeadingH1.value && bodyLeadingH1.value === displayTitle.value
+    const value = skipFirst ? body.value.slice(1) : body.value
+    if (value.length > 0) {
+      try {
+        const md = stringifyMinimark({ type: 'minimark', value }).trim()
+        if (md) lines.push(md, '')
+      }
+      catch {
+        // Stringify can throw on malformed minimark — degrade gracefully and
+        // skip the body rather than poisoning the entire copy.
+      }
+    }
+  }
+
+  if (latest.value.length) {
+    lines.push('## Latest', '')
+    for (const file of latest.value) {
+      const title = file.title || slugToTitle(file.path.split('/').pop() || '')
+      lines.push(`- [${title}](${file.path})`)
+    }
+    lines.push('')
+  }
+  if (hierarchy.value.sections.length) {
+    lines.push('## Folders', '')
+    for (const section of hierarchy.value.sections) {
+      lines.push(`- [${section.title}](${section.path}) — ${section.count}`)
+    }
+    lines.push('')
+  }
+  if (hierarchy.value.rootFiles.length) {
+    lines.push('## Articles', '')
+    for (const file of hierarchy.value.rootFiles) {
+      const title = file.title || slugToTitle(file.path.split('/').pop() || '')
+      lines.push(`- [${title}](${file.path})`)
+    }
+    lines.push('')
+  }
+
+  return lines.join('\n').trimEnd() + '\n'
+}
+
+async function copyMarkdown() {
+  if (!import.meta.client) return
+  const markdown = buildMarkdown()
+
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(markdown)
+    }
+    else {
+      // Legacy fallback for non-secure contexts (e.g. plain-http preview).
+      const ta = document.createElement('textarea')
+      ta.value = markdown
+      ta.style.position = 'fixed'
+      ta.style.left = '-9999px'
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+    }
+    copyState.value = 'copied'
+    // Byte count makes the toast useful at a glance — confirms the copy isn't
+    // empty (e.g. on a stub section) and gives the user a quick sanity-check.
+    const bytes = new Blob([markdown]).size
+    toast.success('Copied as Markdown', {
+      description: `${displayTitle.value} · ${formatBytes(bytes)}`,
+    })
+  }
+  catch (err) {
+    copyState.value = 'error'
+    toast.error('Copy failed', {
+      description: err instanceof Error ? err.message : 'Clipboard unavailable',
+    })
+  }
+
+  if (copyResetTimer) clearTimeout(copyResetTimer)
+  copyResetTimer = setTimeout(() => {
+    copyState.value = 'idle'
+    copyResetTimer = null
+  }, 1500)
+}
+
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
+  return `${(n / (1024 * 1024)).toFixed(2)} MB`
+}
+
+const copyTitle = computed(() => {
+  if (copyState.value === 'copied') return 'Copied to clipboard'
+  if (copyState.value === 'error') return 'Copy failed'
+  return 'Copy as Markdown'
+})
+
+// Visible button label. Plain text beat the icon iterations (sparkle was
+// too abstract; clipboard+MD wordmark was illegible at the available
+// pixel budget). Three short states — same character class so the row
+// width stays stable across transitions when paired with a min-width on
+// the button.
+const copyLabel = computed(() => {
+  if (copyState.value === 'copied') return 'Copied'
+  if (copyState.value === 'error') return 'Failed'
+  return 'Copy'
+})
+
+// "Open in AI" dropdown — deep-links the *page URL* (not the markdown
+// body) into AI chat hosts via their `?q=` parameter. The hosts then
+// fetch and reason about the page themselves, which sidesteps the URL-
+// length cap that would truncate a markdown payload and keeps the AI's
+// view authoritative (it sees the live page, not a frozen snapshot).
+//
+// `useRequestURL()` is SSR-safe and resolves to the canonical absolute
+// URL on both server and client.
+const menuOpen = ref(false)
+const triggerEl = useTemplateRef<HTMLElement>('triggerEl')
+const menuEl = useTemplateRef<HTMLElement>('menuEl')
+
+function toggleMenu() {
+  menuOpen.value = !menuOpen.value
+}
+function closeMenu() {
+  menuOpen.value = false
+}
+
+const requestURL = useRequestURL()
+const pageURL = computed(() => {
+  const u = new URL(path.value, requestURL.origin)
+  return u.toString()
+})
+const claudeUrl = computed(() =>
+  `https://claude.ai/new?q=${encodeURIComponent(pageURL.value)}`,
+)
+const chatgptUrl = computed(() =>
+  `https://chatgpt.com/?q=${encodeURIComponent(pageURL.value)}`,
+)
+
+// Floating-UI positioning. `bottom-end` anchors the menu to the right
+// edge of the caret button; `flip` mirrors to `top-end` when the column
+// has no room below; `shift` keeps the menu inside the viewport.
+// `autoUpdate` re-runs on scroll/resize/layout changes — important
+// because stacked columns scroll horizontally and the trigger can
+// reposition mid-scroll.
+const { floatingStyles } = useFloating(triggerEl, menuEl, {
+  placement: 'bottom-end',
+  middleware: [offset(6), flip(), shift({ padding: 8 })],
+  whileElementsMounted: autoUpdate,
+})
+
+// Click-outside / Esc dismissal. Floating-UI/vue ships positioning only,
+// so dismissal is hand-rolled. Cheap: handler bails immediately when the
+// menu is closed.
+function handleClickOutside(event: MouseEvent) {
+  if (!menuOpen.value) return
+  const target = event.target as Node
+  if (triggerEl.value?.contains(target)) return
+  if (menuEl.value?.contains(target)) return
+  closeMenu()
+}
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && menuOpen.value) closeMenu()
+}
+
+onMounted(() => {
+  if (!import.meta.client) return
+  document.addEventListener('click', handleClickOutside)
+  document.addEventListener('keydown', handleKeydown)
+})
+
+onBeforeUnmount(() => {
+  if (copyResetTimer) clearTimeout(copyResetTimer)
+  if (import.meta.client) {
+    document.removeEventListener('click', handleClickOutside)
+    document.removeEventListener('keydown', handleKeydown)
+  }
 })
 </script>
 
@@ -449,9 +667,87 @@ const sectionIndex = computed(() => {
           </span>
           <span class="truncate">{{ displayTitle }}</span>
         </h2>
-        <span class="text-[9px] border border-terminal-border px-1 py-0.5 font-bold font-mono shrink-0 text-terminal-text-secondary">
-          {{ sectionBadge }}
-        </span>
+        <!-- Split-button: primary half copies markdown; the chevron half is
+             the Floating-UI anchor for the AI-deep-link menu. Visually fused
+             (negative margin merges the shared border) so it reads as one
+             control with two affordances. The menu's `ref="menuEl"` is bound
+             to `<Teleport to="body">` so it escapes the column's overflow
+             clip; positioning is computed by `useFloating()`. -->
+        <div class="copy-actions">
+          <button
+            type="button"
+            class="copy-btn"
+            :aria-label="`Copy ${displayTitle} as markdown`"
+            :title="copyTitle"
+            :data-state="copyState"
+            @click.stop="copyMarkdown"
+          >
+            <!-- Plain text label. Icon iterations (sparkle, clipboard+MD)
+                 either misread or were illegible at the available pixel
+                 budget; a literal word is unambiguous and fits the
+                 brutalist-terminal surface where the rest of the header
+                 is already typographic. State-flipping is purely textual
+                 so there is nothing to layout-thrash on success. -->
+            <span class="copy-btn__label">{{ copyLabel }}</span>
+          </button>
+          <button
+            ref="triggerEl"
+            type="button"
+            class="copy-btn copy-btn--menu"
+            :aria-expanded="menuOpen"
+            aria-haspopup="menu"
+            aria-label="Open in AI assistant"
+            title="Open in AI"
+            @click.stop="toggleMenu"
+          >
+            <svg
+              class="copy-btn__caret"
+              :class="{ 'copy-btn__caret--open': menuOpen }"
+              viewBox="0 0 12 8"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="square"
+              stroke-linejoin="miter"
+              aria-hidden="true"
+            >
+              <path d="M2 2 L6 6 L10 2" />
+            </svg>
+          </button>
+        </div>
+        <Teleport to="body">
+          <div
+            v-if="menuOpen"
+            ref="menuEl"
+            class="copy-menu"
+            role="menu"
+            :style="floatingStyles"
+            @click.stop
+          >
+            <a
+              :href="claudeUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="copy-menu__item"
+              role="menuitem"
+              @click="closeMenu"
+            >
+              <span class="copy-menu__arrow">→</span>
+              <span>Claude.ai</span>
+            </a>
+            <a
+              :href="chatgptUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="copy-menu__item"
+              role="menuitem"
+              @click="closeMenu"
+            >
+              <span class="copy-menu__arrow">→</span>
+              <span>ChatGPT</span>
+            </a>
+          </div>
+        </Teleport>
       </div>
     </div>
 
@@ -468,7 +764,23 @@ const sectionIndex = computed(() => {
              the column's own Articles list. Sits above Folders as a "what's new"
              entry point. Auto-hides when empty (e.g. flat leaf folders). -->
         <section v-if="latest.length > 0" aria-label="Latest">
-          <h3 class="section-heading mx-5">Latest</h3>
+          <h3 class="section-heading mx-5">
+            <!-- Clock — connotes recency, the section's defining axis. -->
+            <svg
+              class="section-heading__icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="square"
+              stroke-linejoin="miter"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7 L12 12 L16 14" />
+            </svg>
+            <span>Latest</span>
+          </h3>
           <ul class="flex flex-col py-2">
             <li
               v-for="(file, index) in latest"
@@ -501,7 +813,23 @@ const sectionIndex = computed(() => {
 
         <!-- Sections sub-grouping (folders) -->
         <section v-if="hierarchy.sections.length > 0" aria-label="Sections">
-          <h3 class="section-heading mx-5">Folders</h3>
+          <h3 class="section-heading mx-5">
+            <!-- Folder glyph — sharp-cornered tab + body, matches the
+                 brutalist surface (no rounded folder corners). -->
+            <svg
+              class="section-heading__icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="square"
+              stroke-linejoin="miter"
+              aria-hidden="true"
+            >
+              <path d="M3 6 L10 6 L12 9 L21 9 L21 20 L3 20 Z" />
+            </svg>
+            <span>Folders</span>
+          </h3>
           <ul class="flex flex-col py-2">
             <li
               v-for="(section, index) in hierarchy.sections"
@@ -527,6 +855,23 @@ const sectionIndex = computed(() => {
         <!-- Root file listing (flat articles within current section) -->
         <section v-if="hierarchy.rootFiles.length > 0" aria-label="Articles">
           <h3 class="section-heading mx-5">
+            <!-- Document with folded corner + body lines — universal
+                 "article / file" affordance. -->
+            <svg
+              class="section-heading__icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="square"
+              stroke-linejoin="miter"
+              aria-hidden="true"
+            >
+              <path d="M6 3 L15 3 L20 8 L20 21 L6 21 Z" />
+              <path d="M15 3 L15 8 L20 8" />
+              <path d="M9 13 L16 13" />
+              <path d="M9 17 L16 17" />
+            </svg>
             <span>Articles</span>
             <span
               v-if="articlesUniformMeta"
