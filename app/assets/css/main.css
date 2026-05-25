@@ -271,7 +271,22 @@
     text-underline-offset: 3px;
   }
 
-  .content strong { @apply text-terminal-text font-semibold; }
+  .content strong {
+    @apply text-terminal-text font-semibold;
+    /* Explicit text-decoration to ensure wavy underline inherits correctly
+       when <a> wraps <strong> */
+    text-decoration: inherit;
+    text-decoration-color: inherit;
+    text-decoration-style: inherit;
+    text-underline-offset: inherit;
+  }
+  /* Ensure strong inside links explicitly inherits the underline */
+  .content a strong {
+    text-decoration: underline;
+    text-decoration-style: wavy;
+    text-decoration-color: currentColor;
+    text-underline-offset: 3px;
+  }
   .content em { font-style: italic; }
 
   /* Lists — top level uses heavy brutalist markers (lime square, decimal-leading-zero
@@ -361,20 +376,28 @@
   .content blockquote p { @apply mb-0; }
   .content blockquote p:first-child { @apply mt-0; }
 
-  /* Code — inline keeps a thin border to look tag-like; pre block relies on
-     bg + lime rail accent (no frame, no shadow). */
+  /* Code — brutalist terminal aesthetic
+     Inline: "inverted tag" look with stamp shadow, muted text (no lime)
+     Blocks: lime rail accent + muted text for readability */
   .content code:not(pre code) {
-    @apply bg-terminal-surface-0 text-primary px-1.5 py-0.5 text-[0.9em] border border-terminal-border;
+    @apply bg-terminal-surface-0 text-terminal-text-secondary px-1.5 py-0.5 text-[0.85em] border border-terminal-border-strong;
     font-family: 'SF Mono', Monaco, Consolas, monospace;
     border-radius: 0;
     white-space: nowrap;
+    box-shadow: 2px 2px 0px 0px theme('colors.terminal.border');
+    transition: all 0.08s ease-out;
+  }
+  .content code:not(pre code):hover {
+    @apply border-primary text-terminal-text;
+    box-shadow: 2px 2px 0px 0px theme('colors.primary');
   }
   .content pre {
-    @apply bg-terminal-surface-0 overflow-x-auto my-6 text-sm relative;
+    @apply bg-terminal-surface-0 overflow-x-auto my-6 text-sm relative border border-terminal-border;
     font-family: 'SF Mono', Monaco, Consolas, monospace;
     line-height: 1.6;
     border-radius: 0;
     padding: 1rem 1.25rem;
+    box-shadow: 4px 4px 0px 0px theme('colors.terminal.border');
   }
   /* Lime accent rail on the left edge — terminal-cursor vibe. */
   .content pre::before {
@@ -382,7 +405,7 @@
     @apply absolute left-0 top-0 bottom-0 w-1 bg-primary;
   }
   .content pre code {
-    @apply bg-transparent p-0 border-0 text-terminal-text;
+    @apply bg-transparent p-0 border-0 text-terminal-text-secondary;
     font-size: inherit;
     white-space: pre;
   }

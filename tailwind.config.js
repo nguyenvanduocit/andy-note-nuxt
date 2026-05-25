@@ -18,7 +18,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#d4ff00',
+        primary: '#ff7b6b',
         terminal: {
           bg: '#2a2a28',
           'bg-light': '#323330',
@@ -26,8 +26,8 @@ export default {
           'text-secondary': '#c0b8a8',
           'text-muted': '#a8a298',
           'text-faint': '#8a857c',
-          accent: '#d4ff00',
-          'accent-hover': '#e8ff4d',
+          accent: '#ff7b6b',
+          'accent-hover': '#ff9b8a',
           border: '#474541',
           'border-strong': '#5a5854',
           surface: {

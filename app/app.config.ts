@@ -8,7 +8,7 @@ export default defineAppConfig({
     description: 'Stacked-column knowledge base — extend, override, publish.',
     tagline: 'A second-brain theme for Nuxt Content',
     author: 'andy-note-nuxt',
-    themeColor: '#d4ff00',
+    themeColor: '#ff7b6b',
     logo: '/logo.png',
   },
   // Top-level navigation. Empty by default — child projects populate with
