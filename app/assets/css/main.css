@@ -22,6 +22,14 @@
 @tailwind utilities;
 
 @layer base {
+    /* Disable pointer interactions on content links until JS is ready.
+       This prevents the "flash of unhandled navigation" where users can
+       click links before Vue hydrates and attaches the click handler.
+       The .js-ready class is added by app.vue once mounted. */
+    html:not(.js-ready) .content a {
+      pointer-events: none;
+    }
+
   /* Layout/spacing tokens that components reference via inline style. */
   :root {
     --column-width: 670px;
@@ -261,14 +269,14 @@
 
   .content a {
     @apply text-primary transition-colors;
-    text-decoration: none;
+    text-decoration: underline;
+    text-decoration-style: solid;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
   }
   .content a:hover {
     @apply text-terminal-accent-hover;
-    text-decoration: underline;
-    text-decoration-style: wavy;
     text-decoration-thickness: 2px;
-    text-underline-offset: 2px;
   }
 
   .content strong { @apply text-terminal-text font-semibold; }
