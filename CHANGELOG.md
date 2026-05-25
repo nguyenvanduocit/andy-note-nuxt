@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.3.0...v0.4.0) (2026-05-25)
+
+
+### Features
+
+* integrate @nuxt/image for optimized markdown images ([01cf894](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/01cf8949cce86e7152094d690384d513a345a876))
+
 ## [0.3.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.2.2...v0.3.0) (2026-05-25)
 
 
