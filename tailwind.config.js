@@ -38,9 +38,14 @@ export default {
           },
         },
       },
+      // The "* Fallback" entries are synthetic families declared via
+      // @font-face in app/assets/css/main.css. They re-map the system font's
+      // metrics to match the real webfont so `font-display: swap` doesn't
+      // shift the layout when the WOFF2 finally arrives. Order matters:
+      // real webfont → metric-matched fallback → ultimate system stack.
       fontFamily: {
-        display: ['Space Grotesk', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-        prose: ['Literata', 'Georgia', 'serif'],
+        display: ['Space Grotesk', 'Space Grotesk Fallback', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        prose: ['Literata', 'Literata Fallback', 'Georgia', 'serif'],
         mono: ['SF Mono', 'Monaco', 'Consolas', 'ui-monospace', 'monospace'],
       },
       // Stamp shadows — flat 0-blur offsets are the brutalist signature.

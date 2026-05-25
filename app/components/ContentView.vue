@@ -1,9 +1,8 @@
 <script setup lang="ts">
-// `minimark` ships with @nuxt/content as a transitive dep — its body field is
-// minimark AST. `stringify` converts that AST back to markdown faithfully, so we
-// can produce a copy-friendly markdown blob without forcing consumers to enable
-// `rawbody` in their collection schema. See https://content.nuxt.com/docs/integrations/llms.
-import { stringify as stringifyMinimark } from 'minimark/stringify'
+// `minimark/stringify` is imported lazily inside copyMarkdown() so it stays
+// out of the initial route bundle — `Copy as markdown` is a user-triggered
+// action, the codepath only fires after a click. See https://content.nuxt.com/docs/integrations/llms
+// for why we round-trip minimark AST → markdown rather than depending on rawbody.
 import { toast } from 'vue-sonner'
 import { useFloating, offset, flip, shift, autoUpdate } from '@floating-ui/vue'
 
@@ -66,32 +65,40 @@ if (malformedPath.value && !props.noThrow) {
 
 // Guard all queries: when path is malformed, skip them entirely (queryCollection
 // would crash with assertSafeQuery before we could handle the error).
-const { data: page } = await useAsyncData(`content-${path.value}`, () => {
-  if (malformedPath.value) return Promise.resolve(null)
-  return queryCollection('content')
-    .where('path', '=', path.value)
-    .first()
-})
-
-// Query descendants regardless of whether `_index.md` exists for the path — that lets
-// section roots like `/builds`, `/`, `/wiki` render a listing of their children even
-// without an explicit index file. Path = '/' must use prefix '/' (not '//') to match all.
+//
+// Page + children fire in parallel via Promise.all instead of two sequential
+// awaits. With key=index TransitionGroup, every stack mutation mounts a fresh
+// ContentView for each column (StackedColumn :key="path" remounts), so the
+// SSR pass for a 4-deep stack used to issue 8 SQL queries serialized in
+// setup order. Parallelizing halves wall-clock cost — both queries hit the
+// same SQLite connection but the second no longer waits for the first to
+// resolve before its `where(...)` plan is built and executed.
+//
+// Path = '/' must use prefix '/' (not '//') so the LIKE matches all rows.
 const childrenPrefix = path.value === '/' ? '/' : `${path.value}/`
-const { data: allChildren } = await useAsyncData(`children-${path.value}`, () => {
-  if (malformedPath.value) return Promise.resolve([])
-  return queryCollection('content')
-    .where('path', 'LIKE', `${childrenPrefix}%`)
-    .where('path', '<>', path.value)
-    .where('path', 'NOT LIKE', '%/_index')
-    // The convention filter used to live here as a SQL `where`, but SQL's
-    // three-valued logic treats `NULL <> 'convention'` as NULL (not true),
-    // so any row whose schema doesn't set document_type — i.e. most rows —
-    // got silently filtered out and listings rendered as empty article
-    // views. The client-side hierarchy filter (`!== 'convention'`) handles
-    // this correctly in JS where `undefined !== 'convention'` is true.
-    .select('path', 'title', 'description', 'document_type', 'updated', 'created')
-    .all()
-})
+const [{ data: page }, { data: allChildren }] = await Promise.all([
+  useAsyncData(`content-${path.value}`, () => {
+    if (malformedPath.value) return Promise.resolve(null)
+    return queryCollection('content')
+      .where('path', '=', path.value)
+      .first()
+  }),
+  useAsyncData(`children-${path.value}`, () => {
+    if (malformedPath.value) return Promise.resolve([])
+    return queryCollection('content')
+      .where('path', 'LIKE', `${childrenPrefix}%`)
+      .where('path', '<>', path.value)
+      .where('path', 'NOT LIKE', '%/_index')
+      // The convention filter used to live here as a SQL `where`, but SQL's
+      // three-valued logic treats `NULL <> 'convention'` as NULL (not true),
+      // so any row whose schema doesn't set document_type — i.e. most rows —
+      // got silently filtered out and listings rendered as empty article
+      // views. The client-side hierarchy filter (`!== 'convention'`) handles
+      // this correctly in JS where `undefined !== 'convention'` is true.
+      .select('path', 'title', 'description', 'document_type', 'updated', 'created')
+      .all()
+  }),
+])
 
 // "Not found" only when path is malformed OR there's no page AND no children to list.
 // Pure section paths (`/builds`, `/`) are valid even without `_index.md` if children exist.
@@ -366,7 +373,7 @@ type CopyState = 'idle' | 'copied' | 'error'
 const copyState = ref<CopyState>('idle')
 let copyResetTimer: ReturnType<typeof setTimeout> | null = null
 
-function buildMarkdown(): string {
+async function buildMarkdown(): Promise<string> {
   const raw = (page.value as any)?.rawbody as string | undefined
   if (typeof raw === 'string' && raw.trim().length > 0) {
     const trimmed = raw.trimStart()
@@ -390,6 +397,10 @@ function buildMarkdown(): string {
     const value = skipFirst ? body.value.slice(1) : body.value
     if (value.length > 0) {
       try {
+        // Lazy import — keeps minimark/stringify out of the initial route
+        // bundle. Vite code-splits this into a chunk fetched only on first
+        // copy-as-markdown click.
+        const { stringify: stringifyMinimark } = await import('minimark/stringify')
         const md = stringifyMinimark({ type: 'minimark', value }).trim()
         if (md) lines.push(md, '')
       }
@@ -429,7 +440,7 @@ function buildMarkdown(): string {
 
 async function copyMarkdown() {
   if (!import.meta.client) return
-  const markdown = buildMarkdown()
+  const markdown = await buildMarkdown()
 
   try {
     if (navigator.clipboard?.writeText) {

@@ -174,7 +174,7 @@ function reset(): void {
   background: #2e2f2c;
   box-shadow: 4px 4px 0 0 #474541;
   margin: 1.5rem 0;
-  font-family: 'Space Grotesk', -apple-system, sans-serif;
+  font-family: 'Space Grotesk', 'Space Grotesk Fallback', -apple-system, sans-serif;
   color: #d5cfc5;
 }
 
@@ -191,7 +191,7 @@ function reset(): void {
 }
 
 .lsc-title {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Space Grotesk', 'Space Grotesk Fallback', sans-serif;
   font-size: 0.95rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -329,7 +329,7 @@ function reset(): void {
 }
 
 .lsc-label {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Space Grotesk', 'Space Grotesk Fallback', sans-serif;
   font-size: 0.9375rem;
   font-weight: 500;
   color: #d5cfc5;
