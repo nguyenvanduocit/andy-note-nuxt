@@ -269,14 +269,14 @@
 
   .content a {
     @apply text-primary transition-colors;
-    text-decoration: underline;
-    text-decoration-style: solid;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 2px;
+    text-decoration: none;
   }
   .content a:hover {
     @apply text-terminal-accent-hover;
-    text-decoration-thickness: 2px;
+    text-decoration: underline;
+    text-decoration-style: wavy;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
   }
 
   .content strong { @apply text-terminal-text font-semibold; }
