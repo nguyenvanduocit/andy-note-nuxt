@@ -33,6 +33,7 @@ export default defineNuxtConfig({
   modules: [
     'vite-plugin-ai-annotator/nuxt',
     '@nuxt/content',
+    '@nuxt/image',
     '@nuxtjs/tailwindcss',
     // Toast notifications. Auto-registers `<Toaster />` (client-only) and a
     // plugin exposing `$toast` / the imported `toast()` helper from `vue-sonner`.

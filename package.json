@@ -48,6 +48,7 @@
     "@fontsource/literata": "^5.2.8",
     "@fontsource/space-grotesk": "^5.2.10",
     "@nuxt/content": "^3.12.0",
+    "@nuxt/image": "^2.0.0",
     "@nuxtjs/tailwindcss": "^6.14.0",
     "nuxt": "^4.4.6",
     "rehype-raw": "^7.0.0",
