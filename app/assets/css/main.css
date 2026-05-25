@@ -68,7 +68,7 @@
   ::selection { @apply bg-primary text-terminal-bg; }
   ::-moz-selection { @apply bg-primary text-terminal-bg; }
 
-  /* Thin scrollbars with lime hover — matches the terminal accent. */
+  /* Thin scrollbars with coral hover — matches the terminal accent. */
   * {
     scrollbar-width: thin;
     scrollbar-color: theme('colors.terminal.border') transparent;
@@ -253,7 +253,7 @@
     @apply text-[10px] text-terminal-text-faint uppercase tracking-widest font-mono mt-1 flex flex-wrap gap-x-3;
   }
 
-  /* Tag badge — bracketed, mono, hover lime. */
+  /* Tag badge — bracketed, mono, hover coral. */
   .tag-badge {
     @apply inline-block text-[10px] font-bold font-mono uppercase tracking-widest px-2 py-1 border-2 border-terminal-border text-terminal-text-secondary transition-colors;
   }
@@ -359,7 +359,7 @@
   }
   .content em { font-style: italic; }
 
-  /* Lists — top level uses heavy brutalist markers (lime square, decimal-leading-zero
+  /* Lists — top level uses heavy brutalist markers (coral square, decimal-leading-zero
      counter). Nested levels strip the box/shadow/zero-pad chrome and tighten padding,
      because in stacked columns 540-640px wide, every depth was eating ~2-2.5rem of
      padding plus a repeating stamp — three levels deep left almost nothing for prose. */
@@ -447,8 +447,8 @@
   .content blockquote p:first-child { @apply mt-0; }
 
   /* Code — brutalist terminal aesthetic
-     Inline: "inverted tag" look with stamp shadow, muted text (no lime)
-     Blocks: lime rail accent + muted text for readability */
+     Inline: "inverted tag" look with stamp shadow, muted text (no coral)
+     Blocks: coral rail accent + muted text for readability */
   .content code:not(pre code) {
     @apply bg-terminal-surface-0 text-terminal-text-secondary px-1.5 py-0.5 text-[0.85em] border border-terminal-border-strong;
     font-family: 'SF Mono', Monaco, Consolas, monospace;

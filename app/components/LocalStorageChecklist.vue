@@ -100,7 +100,7 @@ function reset(): void {
 <template>
   <!-- All structural elements use <div>/<span> rather than prose tags
        (ul/li/h3/p) so the surrounding ContentRenderer's `.content`
-       prose CSS (lime square ::before on li, h3 size, p margins, etc.)
+       prose CSS (coral square ::before on li, h3 size, p margins, etc.)
        does not target component internals. -->
   <div class="lsc-card" role="group" :aria-label="title || 'Checklist'">
     <div class="lsc-header">
@@ -215,8 +215,8 @@ function reset(): void {
   white-space: nowrap;
 }
 .lsc-progress--done {
-  color: #d4ff00;
-  border-color: #d4ff00;
+  color: #ff7b6b;
+  border-color: #ff7b6b;
 }
 
 .lsc-reset {
@@ -232,8 +232,8 @@ function reset(): void {
   transition: color 0.15s, border-color 0.15s;
 }
 .lsc-reset:hover {
-  color: #d4ff00;
-  border-color: #d4ff00;
+  color: #ff7b6b;
+  border-color: #ff7b6b;
 }
 
 .lsc-description {
@@ -274,7 +274,7 @@ function reset(): void {
   margin-top: 0;
 }
 .lsc-group-marker {
-  color: #d4ff00;
+  color: #ff7b6b;
 }
 
 .lsc-item {
@@ -310,11 +310,11 @@ function reset(): void {
   transition: background 0.1s, border-color 0.1s;
 }
 .lsc-checkbox:hover {
-  border-color: #d4ff00;
+  border-color: #ff7b6b;
 }
 .lsc-checkbox:checked {
-  background: #d4ff00;
-  border-color: #d4ff00;
+  background: #ff7b6b;
+  border-color: #ff7b6b;
 }
 .lsc-checkbox:checked::after {
   content: '';
@@ -324,7 +324,7 @@ function reset(): void {
   clip-path: polygon(15% 50%, 40% 75%, 85% 25%, 75% 15%, 40% 55%, 25% 40%);
 }
 .lsc-checkbox:focus-visible {
-  outline: 2px solid #d4ff00;
+  outline: 2px solid #ff7b6b;
   outline-offset: 2px;
 }
 

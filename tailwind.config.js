@@ -1,6 +1,6 @@
 /**
  * Brutalist terminal palette — ported from onepercentplus.
- * Warm dark base + lime accent + 4px-offset stamp shadows are the visual signature.
+ * Warm dark base + coral accent + 4px-offset stamp shadows are the visual signature.
  *
  * Note: kept as `.js` (not `.ts`) because @nuxtjs/tailwindcss's generated
  * postcss.mjs hardcodes `tailwind.config.js` as the import target. A `.ts`
@@ -49,8 +49,8 @@ export default {
         stamp: '4px 4px 0px 0px #474541',
         'stamp-sm': '2px 2px 0px 0px #474541',
         'stamp-lg': '6px 6px 0px 0px #474541',
-        'stamp-accent': '4px 4px 0px 0px #d4ff00',
-        'stamp-accent-sm': '2px 2px 0px 0px #d4ff00',
+        'stamp-accent': '4px 4px 0px 0px #ff7b6b',
+        'stamp-accent-sm': '2px 2px 0px 0px #ff7b6b',
       },
       borderWidth: {
         3: '3px',
