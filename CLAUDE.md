@@ -44,7 +44,36 @@ Do not drift from these without explicit instruction:
 
 ## Commit conventions
 
-- Imperative mood, sentence-case subject; one concern per commit (atomic).
-- No type prefixes (no `feat:` / `fix:`). Em-dash `—` is OK in subjects.
+Conventional Commits drive `release-please` (see `.github/workflows/release.yml`). Format:
+
+```
+<type>(<optional-scope>): <subject>
+
+<optional body>
+
+<optional footer, e.g. BREAKING CHANGE: ...>
+```
+
+- **Version-bumping types** (in pre-1.0 with `bump-minor-pre-major: true`):
+  - `feat:` → minor (0.2.0 → 0.3.0)
+  - `fix:`, `perf:` → patch (0.2.0 → 0.2.1)
+  - `feat!:` or `BREAKING CHANGE:` footer → minor while < 1.0, major once ≥ 1.0
+- **Visible in CHANGELOG**: `feat`, `fix`, `perf`, `refactor`, `docs`, `revert`.
+- **Hidden from CHANGELOG**: `chore`, `style`, `test`, `ci`, `build`.
+- Subject in imperative mood, sentence-case after the colon, one concern per commit. Em-dash `—` is OK.
 - Include `Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>` when Claude contributed.
-- Check `git log --oneline -10` before writing the message — match the existing style.
+- Check `git log --oneline -10` before writing — match existing scope names and tone.
+
+## Releasing
+
+Semi-automated — do not tag manually:
+
+1. Push commits to `main` with conventional types (`feat:`, `fix:`, etc.).
+2. `release.yml` runs the **release-please** job, which opens (or updates) a **Release PR** bumping `package.json` + `.release-please-manifest.json` and rewriting `CHANGELOG.md`.
+3. Review the Release PR (sanity-check CHANGELOG + version bump). Click **Merge** when ready.
+4. The merge commit re-triggers `release.yml`. release-please now sees a merged release PR → creates the `vX.Y.Z` tag + GitHub Release → `publish` job runs `npm publish --provenance` via npm OIDC Trusted Publisher (no token).
+
+### Required repo configuration
+
+- **Settings → Actions → General → Workflow permissions** → enable *"Read and write permissions"* + *"Allow GitHub Actions to create and approve pull requests"*.
+- npm Trusted Publisher is bound to the workflow file path `.github/workflows/release.yml` for `nguyenvanduocit/andy-note-nuxt`. Renaming or moving that file breaks publishing — update the npm side first.
