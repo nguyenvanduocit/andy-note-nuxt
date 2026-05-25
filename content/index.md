@@ -17,8 +17,8 @@ This is the **default landing page** you get right after cloning (or extending) 
 
 ## Customize
 
-- **Branding**: edit `app/app.config.ts` to change `site.title`, `site.description`, `site.tagline`, `site.themeColor`, and `site.logo`.
-- **`<title>` and meta**: edit `app.head` in `nuxt.config.ts`.
+- **Branding**: edit `runtimeConfig.public.site` in `nuxt.config.ts` to change `site.title`, `site.description`, `site.tagline`, `site.themeColor`, and `site.logo`. Nuxt deep-merges your values over the layer's defaults.
+- **`<title>` and meta**: edit `app.head` in the same `nuxt.config.ts`.
 - **Palette**: terminal tokens live in `tailwind.config.js`. Key tokens: `terminal.accent` (#ff7b6b — coral), `terminal.bg` (#2a2a28 — warm dark).
 - **Components**: every file under `app/components/` can be overridden by dropping a same-path file in your child project.
 

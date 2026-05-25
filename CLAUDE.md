@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this project is
 
-A **Nuxt 4 theme layer** consumed by other projects via `extends: ['github:nguyenvanduocit/andy-note-nuxt']`. Not a standalone app — every file under `app/`, `content/`, `nuxt.config.ts`, `tailwind.config.js`, `app/assets/css/main.css`, and `app/app.config.ts` ships to downstream consumers.
+A **Nuxt 4 theme layer** consumed by other projects via `extends: ['github:nguyenvanduocit/andy-note-nuxt']`. Not a standalone app — every file under `app/`, `content/`, `nuxt.config.ts`, `tailwind.config.js`, and `app/assets/css/main.css` ships to downstream consumers. Site-wide config defaults live on `runtimeConfig.public.site` (consumers override in their own `nuxt.config.ts`) — `app.config.ts` is intentionally absent because Nuxt 5 / Nitro 3 removes that API.
 
 ## Commands
 
@@ -18,7 +18,7 @@ A **Nuxt 4 theme layer** consumed by other projects via `extends: ['github:nguye
 The layer ships **wiring**, the consumer ships **domain**:
 
 - **Layer owns**: modules wired in `nuxt.config.ts`, components, composables, default theme, neutral content (`content/index.md`, `content/license.md`).
-- **Consumer owns**: `content.config.ts` (their own schema), their `app.config.ts` overrides, their own markdown content, any domain-specific fields.
+- **Consumer owns**: `content.config.ts` (their own schema), their `runtimeConfig.public.site` overrides (in their `nuxt.config.ts`), their own markdown content, any domain-specific fields.
 
 **Never** add domain-specific fields, sample data, schemas, or examples to the layer. `.optional()` does not sanitize a leaked domain — field names like `pob_link`, `gem_color`, `recipe_yield` advertise a domain even when optional. Same rule applies to CSS variable defaults, sample markdown, README examples, and config presets.
 
@@ -36,7 +36,7 @@ Do not drift from these without explicit instruction:
 - Vue components use `<script setup lang="ts">` + Composition API.
 - SSR-safe browser access: gate with `import.meta.client`, not `onMounted` (see `app/composables/useStack.ts`).
 - `tailwind.config.js` is `.js` (not `.ts`) — `@nuxtjs/tailwindcss` hardcodes the `.js` lookup in its postcss build.
-- Resolve layer-internal paths via `createResolver(import.meta.url)` in `nuxt.config.ts` so paths stay correct from a consumer's resolution scope. See existing `cssPath` / `app.config` wiring before adding new file references.
+- Resolve layer-internal paths via `createResolver(import.meta.url)` in `nuxt.config.ts` so paths stay correct from a consumer's resolution scope. See existing `cssPath` wiring before adding new file references.
 
 ## Stack state machine
 

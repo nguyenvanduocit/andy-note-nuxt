@@ -13,20 +13,27 @@ Mọi customization làm ở **project con** — Nuxt tự merge.
 
 ## Branding
 
-Đổi tên site, description, theme color trong `app/app.config.ts` của project con:
+Đổi tên site, description, theme color trong `nuxt.config.ts` của project con — `runtimeConfig.public.site` deep-merge với defaults của layer:
 
 ```ts
-export default defineAppConfig({
-  site: {
-    title: 'My Knowledge Base',
-    description: 'Personal second-brain.',
-    tagline: 'Notes that stack',
-    author: 'me',
-    themeColor: '#ff7b6b',
-    logo: '/logo.png',
+export default defineNuxtConfig({
+  extends: ['github:nguyenvanduocit/andy-note-nuxt'],
+  runtimeConfig: {
+    public: {
+      site: {
+        title: 'My Knowledge Base',
+        description: 'Personal second-brain.',
+        tagline: 'Notes that stack',
+        author: 'me',
+        themeColor: '#ff7b6b',
+        logo: '/logo.png',
+      },
+    },
   },
 })
 ```
+
+Components đọc qua `useRuntimeConfig().public.site`. Nuxt 5 / Nitro 3 xoá `app.config.ts` nên layer này không dùng `defineAppConfig` nữa — `runtimeConfig.public` là canonical replacement, deep-merge behavior y hệt.
 
 Layer **không** ship top-nav header — UX là single stacked-column shell. Nếu
 muốn nav riêng (sidebar, header bar), override `StackedColumns.vue` hoặc

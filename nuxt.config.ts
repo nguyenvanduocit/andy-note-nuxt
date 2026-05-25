@@ -2,8 +2,13 @@
 //
 // Base Nuxt config for `andy-note-nuxt` theme. Consumers extend this layer
 // via `extends: ['github:nguyenvanduocit/andy-note-nuxt']` (or local path /
-// npm package) and override `app.head` and `appConfig.site` in their child
-// project. All values here are sensible defaults.
+// npm package) and override `app.head` and `runtimeConfig.public.site` in
+// their child project. All values here are sensible defaults.
+//
+// Why runtimeConfig instead of app.config? Nuxt 5 / Nitro 3 removes the
+// `app.config.ts` / `defineAppConfig` / `useAppConfig` surface. Layer site
+// config now lives under `runtimeConfig.public.*`, which Nuxt deep-merges
+// across layers identically. Components read via `useRuntimeConfig().public.site`.
 
 import { createResolver } from '@nuxt/kit'
 
@@ -16,6 +21,14 @@ const { resolve } = createResolver(import.meta.url)
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
+
+  // Opt-in to Nuxt 5 behavior available under Nuxt 4.2+. Flips: non-async
+  // `callHook` return type, client-only HTML comment placeholders, and other
+  // forward-compat defaults. The heavier Nitro v3 / Vite 8 changes ship with
+  // Nuxt 5 itself — not previewable via this flag.
+  future: {
+    compatibilityVersion: 5,
+  },
 
   modules: [
     'vite-plugin-ai-annotator/nuxt',
@@ -55,6 +68,23 @@ export default defineNuxtConfig({
   nitro: {
     prerender: {
       failOnError: false,
+    },
+  },
+
+  // Site-wide config (replaces former app/app.config.ts surface). Consumers
+  // override any field via their own `runtimeConfig.public.site` in nuxt.config —
+  // Nuxt deep-merges child layer values over parent. Free-form extra fields are
+  // allowed via the index signature in `app/types/app-config.d.ts`.
+  runtimeConfig: {
+    public: {
+      site: {
+        title: 'Andy Notes',
+        description: 'Stacked-column knowledge base — extend, override, publish.',
+        tagline: 'A second-brain theme for Nuxt Content',
+        author: 'andy-note-nuxt',
+        themeColor: '#ff7b6b',
+        logo: '/logo.svg',
+      },
     },
   },
 

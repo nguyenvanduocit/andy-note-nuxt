@@ -49,15 +49,14 @@ bun install
 bun dev
 ```
 
-Edit `app/app.config.ts` for branding/menu, `nuxt.config.ts` for `<title>`, and start writing in `content/`.
+Edit `runtimeConfig.public.site` in `nuxt.config.ts` for branding (title, description, tagline, themeColor, logo), `app.head` in the same file for `<title>` / meta tags, and start writing in `content/`.
 
 ## What's included
 
 | Path | Purpose |
 |---|---|
 | `app/app.vue` | Root entry — `<NuxtLayout><NuxtPage /></NuxtLayout>` |
-| `app/app.config.ts` | `site.*` config (title, description, themeColor, logo) |
-| `app/types/app-config.d.ts` | TypeScript augmentation for `useAppConfig()` |
+| `app/types/app-config.d.ts` | TypeScript augmentation declaring `runtimeConfig.public.site` shape |
 | `app/layouts/default.vue` | Full-height shell + `<Toaster>` host |
 | `app/pages/[...slug].vue` | Single catch-all route — delegates to `<StackedColumns>` |
 | `app/components/StackedColumns.vue` | Stacked-column shell — drives the whole UX |
@@ -78,8 +77,7 @@ Edit `app/app.config.ts` for branding/menu, `nuxt.config.ts` for `<title>`, and 
 Nuxt Layers deep-merge child over parent. Override semantics:
 
 - **Components / pages / layouts / composables** → create a file with the same path in your project (e.g. `app/components/ContentView.vue`) and it replaces the layer's.
-- **`nuxt.config.ts`** → deep-merged. Your `app.head` keys override the layer's.
-- **`app/app.config.ts`** → deep-merged. Override `site.*` (or add your own fields by re-declaring the `AppConfig` interface).
+- **`nuxt.config.ts`** → deep-merged. Override `app.head` (for `<title>` / meta) and `runtimeConfig.public.site` (for branding: `title`, `description`, `tagline`, `author`, `themeColor`, `logo`). Layer ships defaults; your values win field-by-field. Add your own fields under `site.*` by augmenting the `PublicRuntimeConfig` interface (see `app/types/app-config.d.ts`).
 - **`tailwind.config.js`** → merged by `@nuxtjs/tailwindcss` across layers. Ship a `tailwind.config.js` in your project with the same shape (`theme.extend.colors`, `theme.extend.boxShadow`, etc.) and it overrides the layer's tokens. The module discovers all layer configs automatically.
 - **`content.config.ts`** → fully replaced by the consumer's file (Nuxt Content reads only one). The layer ships a minimal schema so the SQLite cache has the columns its renderer queries (`document_type`, `updated`, `created`). Your override must include those columns or extend them.
 - **Content** → child `content/<path>.md` overrides parent's same-path file (e.g. `content/license.md` in your project replaces the layer's default license page).
