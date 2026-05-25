@@ -143,6 +143,17 @@ function nodeRecency(node: ContentNode | undefined): number {
   return Number.isFinite(ts) ? ts : 0
 }
 
+// Creation timestamp only — distinct from `nodeRecency` which folds in `updated`.
+// The LATEST list ranks strictly by `created` (a recently *edited* old note is not
+// "new"). Returns 0 when `created` is missing/unparseable so those nodes can be
+// dropped — a node with no creation date has no claim to being among the newest.
+function createdTime(node: ContentNode | undefined): number {
+  const created = node?.created as string | undefined
+  if (!created) return 0
+  const ts = Date.parse(created)
+  return Number.isFinite(ts) ? ts : 0
+}
+
 const hierarchy = computed(() => {
   const nodes = (allChildren.value ?? []) as ContentNode[]
   const prefix = path.value === '/' ? '/' : `${path.value}/`
@@ -215,6 +226,44 @@ const hierarchy = computed(() => {
     rootFiles,
     immediateCount: sections.length + rootFiles.length,
   }
+})
+
+// LATEST: the 5 most recently *created* leaf articles anywhere in the current
+// column's subtree (including nested sub-folders), newest first. Excludes:
+//  - folder/section index pages (only actual articles are "new content")
+//  - articles already listed in this column's ARTICLES section (dedup — the
+//    direct rootFiles are visible right below, so re-listing them adds noise;
+//    this makes LATEST surface the newest *nested* articles instead)
+//  - nodes with no parseable `created` (can't rank them by recency)
+// Result: at a flat leaf folder every article is a rootFile → all deduped → list
+// empty → section auto-hides. At /mechanics or / it surfaces what's new deep in
+// the tree without the reader having to drill each sub-folder.
+const latest = computed<ContentNode[]>(() => {
+  const nodes = (allChildren.value ?? []) as ContentNode[]
+  const prefix = path.value === '/' ? '/' : `${path.value}/`
+  const inSubtree = nodes.filter(node => node.path.startsWith(prefix))
+
+  // A path is a folder iff some descendant lives under it. Collect every
+  // ancestor prefix within the subtree into a set; anything in that set is a
+  // folder index, not a leaf article.
+  const folderPaths = new Set<string>()
+  for (const node of inSubtree) {
+    const segments = node.path.slice(prefix.length).split('/').filter(Boolean)
+    let acc = prefix.replace(/\/$/, '')
+    for (let i = 0; i < segments.length - 1; i++) {
+      acc = normalizePath(`${acc}/${segments[i]}`)
+      folderPaths.add(acc)
+    }
+  }
+
+  const rootFilePaths = new Set(hierarchy.value.rootFiles.map(file => file.path))
+
+  return inSubtree
+    .filter(node => !folderPaths.has(node.path))
+    .filter(node => !rootFilePaths.has(node.path))
+    .filter(node => createdTime(node) > 0)
+    .sort((a, b) => createdTime(b) - createdTime(a))
+    .slice(0, 5)
 })
 
 const isList = computed(() => {
@@ -414,6 +463,41 @@ const sectionIndex = computed(() => {
         <div v-if="hasRenderedBody" class="content px-5 pt-6">
           <ContentRenderer :value="renderedPage" />
         </div>
+
+        <!-- Latest — newest-created articles across the subtree, deduped against
+             the column's own Articles list. Sits above Folders as a "what's new"
+             entry point. Auto-hides when empty (e.g. flat leaf folders). -->
+        <section v-if="latest.length > 0" aria-label="Latest">
+          <h3 class="section-heading mx-5">Latest</h3>
+          <ul class="flex flex-col py-2">
+            <li
+              v-for="(file, index) in latest"
+              :key="file.path"
+              :class="['terminal-item min-w-0', isDrilled(file.path) && 'terminal-item--active']"
+            >
+              <NuxtLink
+                :to="file.path"
+                class="flex items-baseline min-w-0 w-full"
+              >
+                <span class="title-text font-bold uppercase whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-sm">
+                  {{ file.title || slugToTitle(file.path.split('/').pop() || '') }}
+                </span>
+                <span
+                  v-if="metaSegments(file).length"
+                  :class="['game-chip ml-2', gameChipVariant(file)]"
+                >
+                  {{ metaSegments(file).join(' · ') }}
+                </span>
+                <span class="dotted-leader flex-shrink" />
+                <!-- Rank 01 = newest. Distinct from Articles' count-down numbering
+                     because this list is explicitly time-ordered. -->
+                <span class="tabular-nums font-bold font-mono text-[10px] flex-shrink-0 text-terminal-text-faint mr-4">
+                  {{ String(index + 1).padStart(2, '0') }}
+                </span>
+              </NuxtLink>
+            </li>
+          </ul>
+        </section>
 
         <!-- Sections sub-grouping (folders) -->
         <section v-if="hierarchy.sections.length > 0" aria-label="Sections">
