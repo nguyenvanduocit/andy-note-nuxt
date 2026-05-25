@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.4.0...v0.4.1) (2026-05-25)
+
+
+### Performance
+
+* prune fonts, parallelize content queries, eliminate font-swap CLS ([c7a95ad](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/c7a95ad80f1d793dc51584cc285da3b83e5e9f13))
+
 ## [0.4.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.3.0...v0.4.0) (2026-05-25)
 
 
