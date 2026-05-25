@@ -54,45 +54,6 @@ function slugToTitle(slug: string) {
     .replace(/\b\w/g, char => char.toUpperCase())
 }
 
-// Normalize a frontmatter scalar (game / league / patch) for badge display.
-// Frontmatter values come in mixed forms — quoted/unquoted, lower/upper case
-// (`"poe1"` vs `poe1`, `mirage` vs `Mirage`). Strip wrapping quotes/whitespace
-// and uppercase so the rendered badge is consistent regardless of authoring style.
-function normalizeBadge(value: unknown): string {
-  if (typeof value !== 'string') return ''
-  return value.trim().replace(/^["']|["']$/g, '').toUpperCase()
-}
-
-// Build the compact `GAME · VERSION` line shown next to titles. `patch` (e.g.
-// `3.28.0`) strictly contains `league` (`3.28`) as a prefix, so showing both
-// is redundant — prefer `patch` when it extends league, falling back to
-// whichever is set. Both missing means we just render `GAME`.
-function metaSegments(node: Record<string, any> | null | undefined): string[] {
-  if (!node) return []
-  const game = normalizeBadge(node.game)
-  const league = normalizeBadge(node.league)
-  const patch = normalizeBadge(node.patch)
-  // Patch supersedes league when patch starts with `<league>.` (e.g. `3.28.0` covers `3.28`).
-  // Otherwise show whichever single value is present; if they diverge keep both for visibility.
-  const leagueCoveredByPatch = !!patch && !!league && (patch === league || patch.startsWith(`${league}.`))
-  const segments = [game]
-  if (leagueCoveredByPatch) segments.push(patch)
-  else if (patch && league) segments.push(league, patch)
-  else segments.push(patch || league)
-  return segments.filter(Boolean)
-}
-
-// POE1 vs POE2 looked identical when rendered as plain bracketed text — same
-// color, same font, only one character apart. Pick a chip variant per game so
-// the differentiation rides on fill weight (filled vs outlined), not just hue.
-// That stays scannable for color-vision-deficient readers and at small sizes.
-function gameChipVariant(node: Record<string, any> | null | undefined): string {
-  const g = normalizeBadge(node?.game)
-  if (g === 'POE1') return 'game-chip--poe1'
-  if (g === 'POE2') return 'game-chip--poe2'
-  return 'game-chip--unknown'
-}
-
 // Nuxt Content v3 rejects queries containing `--` as SQL comments (`assertSafeQuery`).
 // Some wiki content has malformed empty links pointing to encoded frontmatter strings,
 // which produce route paths containing `---`. Reject those early as 404 instead of
@@ -128,7 +89,7 @@ const { data: allChildren } = await useAsyncData(`children-${path.value}`, () =>
     // got silently filtered out and listings rendered as empty article
     // views. The client-side hierarchy filter (`!== 'convention'`) handles
     // this correctly in JS where `undefined !== 'convention'` is true.
-    .select('path', 'title', 'description', 'document_type', 'status', 'budget_tier', 'game', 'league', 'patch', 'build_tags', 'ratings', 'strategy_tier', 'profit_per_hour', 'investment_tier', 'updated', 'created')
+    .select('path', 'title', 'description', 'document_type', 'updated', 'created')
     .all()
 })
 
@@ -283,33 +244,6 @@ const isList = computed(() => {
   return hierarchy.value.sections.length > 0 || hierarchy.value.rootFiles.length > 0
 })
 
-// Article-listing meta dedup: when EVERY rootFile carries the same `game · league · patch`
-// triple, render a single badge in the section heading instead of repeating it on every
-// row. Returns null when the listing is mixed (different leagues / patches / games) or
-// when at least one file is missing a meta value — those cases need per-row badges to
-// distinguish files. Strict uniformity is correct here: if even one row differs, hiding
-// the others would mask real distinctions.
-const articlesUniformMeta = computed<string | null>(() => {
-  const files = hierarchy.value.rootFiles
-  if (files.length < 2) return null
-  const keys = new Set<string>()
-  for (const f of files) {
-    const k = metaSegments(f).join(' · ')
-    if (!k) return null
-    keys.add(k)
-    if (keys.size > 1) return null
-  }
-  return Array.from(keys)[0] ?? null
-})
-
-// Chip variant for the uniform-meta header — uniformly all rows share the same
-// game, so reading the first file is sufficient.
-const articlesUniformGameVariant = computed<string>(() => {
-  if (!articlesUniformMeta.value) return 'game-chip--unknown'
-  const first = hierarchy.value.rootFiles[0]
-  return first ? gameChipVariant(first) : 'game-chip--unknown'
-})
-
 useHead({
   title: page.value?.title,
   meta: [
@@ -326,10 +260,12 @@ function toTitleCase(str: string) {
   return str.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
-// Unified tag list. Game / league / patch were previously rendered as a separate
-// badge row above the title; we now fold them into this list and mark them
-// `important` so the template can highlight them in place. One row, one source of
-// truth — clearer for readers and avoids duplicating the same context twice.
+// Tag list rendered above the article body. Duplicates are normalized via
+// `toKebab` so callers can write tags freely without worrying about case /
+// whitespace collisions. The `important` channel is kept on the shape for
+// consumers who want to mark a subset of tags as high-emphasis — they can
+// extend this computed in their own renderer fork; the layer itself doesn't
+// promote any tag by default.
 const allTags = computed(() => {
   const p = page.value as any
   const seen = new Set<string>()
@@ -341,24 +277,7 @@ const allTags = computed(() => {
     if (k && !seen.has(k)) { seen.add(k); result.push({ value: k, important }) }
   }
 
-  // Important meta first — these are the highest-context tags (game version,
-  // league, patch). Highlighted to stand out among the long tail.
-  add(p?.game, true)
-  add(p?.league, true)
-  add(p?.patch, true)
-
   for (const tag of (p?.tags || [])) add(tag)
-
-  const bt = p?.build_tags
-  if (bt) {
-    add(bt.primary_skill)
-    add(bt.damage_type)
-    add(bt.playstyle)
-    add(bt.content_focus)
-  }
-
-  add(p?.budget_tier)
-  add(p?.ascendancy)
 
   return result
 })
@@ -794,12 +713,6 @@ onBeforeUnmount(() => {
                 <span class="title-text font-bold uppercase whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-sm">
                   {{ file.title || slugToTitle(file.path.split('/').pop() || '') }}
                 </span>
-                <span
-                  v-if="metaSegments(file).length"
-                  :class="['game-chip ml-2', gameChipVariant(file)]"
-                >
-                  {{ metaSegments(file).join(' · ') }}
-                </span>
                 <span class="dotted-leader flex-shrink" />
                 <!-- Rank 01 = newest. Distinct from Articles' count-down numbering
                      because this list is explicitly time-ordered. -->
@@ -873,12 +786,6 @@ onBeforeUnmount(() => {
               <path d="M9 17 L16 17" />
             </svg>
             <span>Articles</span>
-            <span
-              v-if="articlesUniformMeta"
-              :class="['ml-auto game-chip', articlesUniformGameVariant]"
-            >
-              {{ articlesUniformMeta }}
-            </span>
           </h3>
           <ul class="flex flex-col py-2">
             <li
@@ -892,12 +799,6 @@ onBeforeUnmount(() => {
               >
                 <span class="title-text font-bold uppercase whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-sm">
                   {{ file.title || slugToTitle(file.path.split('/').pop() || '') }}
-                </span>
-                <span
-                  v-if="!articlesUniformMeta && metaSegments(file).length"
-                  :class="['game-chip ml-2', gameChipVariant(file)]"
-                >
-                  {{ metaSegments(file).join(' · ') }}
                 </span>
                 <span class="dotted-leader flex-shrink" />
                 <span class="tabular-nums font-bold font-mono text-[10px] flex-shrink-0 text-terminal-text-faint mr-4">
