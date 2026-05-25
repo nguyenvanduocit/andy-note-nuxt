@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.4.1...v0.4.2) (2026-05-25)
+
+
+### Bug Fixes
+
+* restore broader unicode-range coverage in font imports ([5173cfa](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/5173cfa3c2587f19ffd67b71ff488ca673e6a19e))
+
 ## [0.4.1](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.4.0...v0.4.1) (2026-05-25)
 
 
