@@ -22,14 +22,6 @@
 @tailwind utilities;
 
 @layer base {
-    /* Disable pointer interactions on content links until JS is ready.
-       This prevents the "flash of unhandled navigation" where users can
-       click links before Vue hydrates and attaches the click handler.
-       The .js-ready class is added by app.vue once mounted. */
-    html:not(.js-ready) .content a {
-      pointer-events: none;
-    }
-
   /* Layout/spacing tokens that components reference via inline style. */
   :root {
     --column-width: 670px;
