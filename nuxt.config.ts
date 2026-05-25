@@ -37,6 +37,9 @@ export default defineNuxtConfig({
   css: [resolve('./app/assets/css/main.css')],
 
   content: {
+    experimental: {
+      sqliteConnector: 'native',
+    },
     build: {
       markdown: {
         highlight: false,
