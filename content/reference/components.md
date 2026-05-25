@@ -55,19 +55,36 @@ view** (folder có con) và **article view** (leaf page).
 File: `app/components/LocalStorageChecklist.vue`
 
 MDC component để dùng trong markdown — render checklist mà state persist
-qua localStorage. Gọi từ markdown:
+qua localStorage. Gọi từ markdown bằng MDC block syntax + YAML frontmatter
+để truyền `items` array:
 
 ```mdc
-::local-storage-checklist{:id="my-checklist"}
-- [ ] First task
-- [ ] Second task
-- [ ] Third task
+::local-storage-checklist
+---
+storageKey: rust-learning
+title: Rust learning track
+description: Tick off khi hoàn thành
+items:
+  - id: ownership
+    label: Read the ownership chapter
+  - id: lifetimes
+    label: Practice lifetimes
+    hint: làm 5 bài exercise
+  - id: runtime
+    label: Build a small async runtime
+    group: Advanced
 ::
 ```
 
 | Prop | Type | Default | Note |
 |---|---|---|---|
-| `id` | `string` | required | Key trong localStorage (phải unique trong site) |
+| `storageKey` | `string` | required | Key dùng nguyên văn trong `localStorage`. Caller tự namespacing (vd `notes-rust-learning`). Hai checklist trùng key sẽ share state. |
+| `items` | `ChecklistItem[]` | required | Mỗi item: `{ id, label, hint?, group? }`. `id` phải unique trong checklist. `group` (optional) gộp items thành section. |
+| `title` | `string` | optional | Heading ở đầu card |
+| `description` | `string` | optional | Sub-heading dưới title |
+
+State được persist dạng `{ checked: string[] }` trong localStorage —
+graceful fallback sang in-memory nếu storage không khả dụng (private mode).
 
 ## Composable
 

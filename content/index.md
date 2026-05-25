@@ -19,7 +19,7 @@ updated: 2026-05-11
 
 - **Menu & branding**: sửa `app/app.config.ts` để đổi `site.title`, `site.description`, và mảng `menu`.
 - **Title trang web**: sửa `app.head.title` trong `nuxt.config.ts`.
-- **Màu sắc**: palette terminal nằm trong `tailwind.config.js`. Token chính: `terminal.accent` (#d4ff00 — lime), `terminal.bg` (#2a2a28 — warm dark).
+- **Màu sắc**: palette terminal nằm trong `tailwind.config.js`. Token chính: `terminal.accent` (#ff7b6b — coral), `terminal.bg` (#2a2a28 — warm dark).
 - **Component**: mọi file trong `app/components/` đều override được bằng cách tạo file cùng tên ở child project.
 
 Xem [License](/license) để biết điều khoản sử dụng.

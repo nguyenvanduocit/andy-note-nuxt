@@ -13,21 +13,24 @@ Mọi customization làm ở **project con** — Nuxt tự merge.
 
 ## Branding
 
-Đổi tên site, description, menu trong `app/app.config.ts` của project con:
+Đổi tên site, description, theme color trong `app/app.config.ts` của project con:
 
 ```ts
 export default defineAppConfig({
   site: {
     title: 'My Knowledge Base',
     description: 'Personal second-brain.',
+    tagline: 'Notes that stack',
+    author: 'me',
+    themeColor: '#ff7b6b',
+    logo: '/logo.png',
   },
-  menu: [
-    { label: 'Guides', path: '/guides' },
-    { label: 'Reference', path: '/reference' },
-    { label: 'License', path: '/license' },
-  ],
 })
 ```
+
+Layer **không** ship top-nav header — UX là single stacked-column shell. Nếu
+muốn nav riêng (sidebar, header bar), override `StackedColumns.vue` hoặc
+thêm layout wrapper rồi render menu structure của riêng bạn.
 
 Đổi tag `<title>` mặc định ở `nuxt.config.ts`:
 

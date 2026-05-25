@@ -1,6 +1,6 @@
 # andy-note-nuxt
 
-Brutalist-terminal **Nuxt 4 + Nuxt Content v3 theme** packaged as a [Nuxt Layer](https://nuxt.com/docs/getting-started/layers). Stacked-column navigation (click a note → new column pushes from the right), warm-dark palette with lime accent + flat 4px stamp shadows. Designed for personal notes, guides, and second-brain knowledge bases.
+Brutalist-terminal **Nuxt 4 + Nuxt Content v3 theme** packaged as a [Nuxt Layer](https://nuxt.com/docs/getting-started/layers). Stacked-column navigation (click a note → new column pushes from the right), warm-dark palette with coral accent + flat 4px stamp shadows. Designed for personal notes, guides, and second-brain knowledge bases.
 
 ## Quick start — use as a layer
 
@@ -55,19 +55,53 @@ Edit `app/app.config.ts` for branding/menu, `nuxt.config.ts` for `<title>`, and 
 
 | Path | Purpose |
 |---|---|
+| `app/app.vue` | Root entry — `<NuxtLayout><NuxtPage /></NuxtLayout>` |
+| `app/app.config.ts` | `site.*` config (title, description, themeColor, logo) |
+| `app/types/app-config.d.ts` | TypeScript augmentation for `useAppConfig()` |
+| `app/layouts/default.vue` | Full-height shell + `<Toaster>` host |
+| `app/pages/[...slug].vue` | Single catch-all route — delegates to `<StackedColumns>` |
 | `app/components/StackedColumns.vue` | Stacked-column shell — drives the whole UX |
-| `app/components/ContentView.vue` | Per-column renderer (handles index pages, listings, single docs) |
-| `app/components/LocalStorageChecklist.vue` | Persistent checklist embeddable in any markdown |
-| `app/composables/useStack.ts` | Stack state machine (push/pop columns, URL sync) |
+| `app/components/StackedColumn.vue` | Single column wrapper (click → push, scroll-to-focus) |
+| `app/components/ContentView.vue` | Per-column renderer (auto-switches listing vs article view) |
+| `app/components/LocalStorageChecklist.vue` | MDC component — persistent checklist embeddable in any markdown |
+| `app/composables/useStack.ts` | Stack state machine (push/pop columns, URL sync, scroll geometry) |
 | `app/assets/css/main.css` | Brutalist terminal theme — Tailwind v3 base + custom prose layers |
+| `nuxt.config.ts` | Module wiring (`@nuxt/content`, `@nuxtjs/tailwindcss`, `vue-sonner/nuxt`, `vite-plugin-ai-annotator`) |
 | `tailwind.config.js` | Color palette + stamp shadow tokens |
+| `content.config.ts` | Minimal generic schema (7 fields — see "Schema" below) |
 | `content/index.md` | Default landing page |
-| `content/license.md` | Default license page (override in your child project) |
+| `content/license.md` | Default license page |
+| `content/quick-start.md`, `content/guides/`, `content/reference/` | Theme's own docs — override or delete in your child |
 
-**Not included** — the layer intentionally does NOT ship a `content.config.ts`. Schemas are project-specific, and Nuxt Content v3.13+ requires the consumer to install `zod` + `zod-to-json-schema` themselves. Your child project owns the schema. A minimal starter looks like:
+## Override anything
+
+Nuxt Layers deep-merge child over parent. Override semantics:
+
+- **Components / pages / layouts / composables** → create a file with the same path in your project (e.g. `app/components/ContentView.vue`) and it replaces the layer's.
+- **`nuxt.config.ts`** → deep-merged. Your `app.head` keys override the layer's.
+- **`app/app.config.ts`** → deep-merged. Override `site.*` (or add your own fields by re-declaring the `AppConfig` interface).
+- **`tailwind.config.js`** → merged by `@nuxtjs/tailwindcss` across layers. Ship a `tailwind.config.js` in your project with the same shape (`theme.extend.colors`, `theme.extend.boxShadow`, etc.) and it overrides the layer's tokens. The module discovers all layer configs automatically.
+- **`content.config.ts`** → fully replaced by the consumer's file (Nuxt Content reads only one). The layer ships a minimal schema so the SQLite cache has the columns its renderer queries (`document_type`, `updated`, `created`). Your override must include those columns or extend them.
+- **Content** → child `content/<path>.md` overrides parent's same-path file (e.g. `content/license.md` in your project replaces the layer's default license page).
+
+## Schema
+
+The layer ships a minimal, generic `content.config.ts` covering only the fields its renderer actually reads:
+
+| Field | Type | Used by |
+|---|---|---|
+| `title` | `string` | Column header, listing item, `<title>` |
+| `description` | `string` | `<meta>`, OG tags, section listings |
+| `document_type` | `string` | `"convention"` hides the file from listings |
+| `tags` | `string[]` | Tag pills under H1 |
+| `created` | `string` (ISO date) | Listing sort, recency badge |
+| `updated` | `string` (ISO date) | Listing sort (preferred over `created`) |
+| `rawbody` | `string` | Auto-populated — backs "Copy as Markdown" with byte-faithful source |
+
+Every field is `.optional()` — you can write a `.md` with no frontmatter at all. To add domain-specific fields (`priority`, `owner`, `due_date`, anything project-specific), **override `content.config.ts` in your child project**:
 
 ```ts
-// content.config.ts in YOUR project
+// content.config.ts in YOUR project — replaces the layer's schema entirely
 import { defineCollection, defineContentConfig, z } from '@nuxt/content'
 
 export default defineContentConfig({
@@ -76,40 +110,24 @@ export default defineContentConfig({
       type: 'page',
       source: '**/*.md',
       schema: z.object({
+        // Keep these — the renderer queries them
+        title: z.string().optional(),
         description: z.string().optional(),
+        document_type: z.string().optional(),
         tags: z.array(z.string()).optional(),
         created: z.string().optional(),
         updated: z.string().optional(),
-        // ...add fields as your notes evolve
+        rawbody: z.string().optional(),
+        // Add your own
+        priority: z.enum(['low', 'medium', 'high']).optional(),
+        owner: z.string().optional(),
       }),
     }),
   },
 })
 ```
 
-## Override anything
-
-Nuxt Layers deep-merge child over parent. Override semantics:
-
-- **Components / pages / layouts / composables** → create a file with the same path in your project (e.g. `app/components/ContentView.vue`) and it replaces the layer's.
-- **`nuxt.config.ts`** → deep-merged. Your `app.head` keys override the layer's.
-- **`app/app.config.ts`** → deep-merged. Override `site.*` and `menu[]`.
-- **`tailwind.config.js`** → NOT auto-merged by Nuxt. If you need a different palette, copy the file into your project; Tailwind picks up your project's config.
-- **Content** → child `content/<path>.md` overrides parent's same-path file (e.g. `content/license.md` in your project replaces the layer's default license page).
-
-## Schema
-
-`content.config.ts` ships a permissive schema — every field is optional. Common fields available out of the box:
-
-- Universal: `title`, `description`, `tags[]`, `status`, `created`, `updated`, `author`, `weight`
-- Game / domain tagging: `game`, `league`, `patch` (renders as badges in headers)
-- Build / recipe: `class`, `ascendancy`, `budget_tier`, `build_tags{}`, `ratings{}`, `pob_link`
-- Economy: `strategy_tier`, `profit_per_hour`, `investment_tier`
-- Skill / technique: `gem_color`, `skill_type`, `level_requirement`, `skill_tags[]`
-- Instance / character: `level`, `progress_stage`
-- Item / class / league: `rarity`, `item_class`, `class_type`, `complexity`, `league_type`
-
-Unused fields cost nothing (null in cache). To replace the schema entirely, override `content.config.ts` in your child project.
+Unused fields cost nothing (null in cache).
 
 ## Conventions baked in
 
