@@ -7,20 +7,25 @@
 
 /* Fonts — @import MUST precede @tailwind directives per CSS spec.
    Local @fontsource packages = self-host (no FOUT, no third-party request).
-   We import only the weights/subsets actually referenced by the layer:
+   We import only the weights actually referenced by the layer:
      - Space Grotesk 500 → LocalStorageChecklist `.lsc-label`
      - Space Grotesk 700 → every `font-bold` headline/label
      - Literata 400 / 400-italic / 600 → prose body / <em> / <strong>
-   `latin-<weight>.css` ships only the latin @font-face rule, skipping the
-   cyrillic / greek / vietnamese / latin-ext declarations whose subsets
-   never get fetched anyway (unicode-range gates the WOFF2 request, but the
-   @font-face rules themselves still pad critical CSS). Consumers serving
-   non-latin content should override main.css with the broader imports. */
-@import "@fontsource/space-grotesk/latin-500.css";
-@import "@fontsource/space-grotesk/latin-700.css";
-@import "@fontsource/literata/latin-400.css";
-@import "@fontsource/literata/latin-400-italic.css";
-@import "@fontsource/literata/latin-600.css";
+   The non-`latin-` entry ships @font-face for every unicode subset
+   (cyrillic, greek, latin-ext, vietnamese, latin). Each block carries a
+   `unicode-range` so the browser only downloads the woff2 that actually
+   maps to glyphs on the page — Vietnamese consumers get latin + vietnamese
+   subsets, latin-only consumers get just latin. Earlier we narrowed to
+   `latin-<weight>.css` to shave a few KB of @font-face rules; that broke
+   Vietnamese UI strings (poe1/poe2 nav, site description, builds) because
+   characters like ầ ế ợ have no @font-face declaration claiming them and
+   fell back to Arial. Reverted: subset gating now lives in unicode-range
+   inside the woff2 fetches, not in the @import surface. */
+@import "@fontsource/space-grotesk/500.css";
+@import "@fontsource/space-grotesk/700.css";
+@import "@fontsource/literata/400.css";
+@import "@fontsource/literata/400-italic.css";
+@import "@fontsource/literata/600.css";
 
 /* ===== Fallback @font-face overrides — CLS 0.12 → 0.00 =====
    While the real WOFF2 is in flight, `font-display: swap` paints with a
