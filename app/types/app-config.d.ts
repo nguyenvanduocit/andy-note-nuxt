@@ -14,6 +14,5 @@ declare module 'nuxt/schema' {
       // Free-form extras child projects can attach without re-declaring the interface.
       [key: string]: unknown
     }
-    menu: Array<{ name: string; url: string; weight: number }>
   }
 }

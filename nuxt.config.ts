@@ -2,8 +2,8 @@
 //
 // Base Nuxt config for `andy-note-nuxt` theme. Consumers extend this layer
 // via `extends: ['github:nguyenvanduocit/andy-note-nuxt']` (or local path /
-// npm package) and override `app.head`, `appConfig.site`, `appConfig.menu`
-// in their child project. All values here are sensible defaults.
+// npm package) and override `app.head` and `appConfig.site` in their child
+// project. All values here are sensible defaults.
 
 import { createResolver } from '@nuxt/kit'
 
@@ -66,7 +66,7 @@ export default defineNuxtConfig({
       title: 'Andy Notes — Stacked-Column Knowledge Base',
       meta: [
         { name: 'description', content: 'A brutalist-terminal Nuxt Content theme for personal notes, guides, and second-brain knowledge bases.' },
-        { name: 'theme-color', content: '#d4ff00' },
+        { name: 'theme-color', content: '#ff7b6b' },
       ],
       link: [
         { rel: 'icon', type: 'image/png', href: '/images/favicon.png' },

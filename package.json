@@ -24,6 +24,7 @@
     "public",
     "content/index.md",
     "content/license.md",
+    "content.config.ts",
     "nuxt.config.ts",
     "tailwind.config.js",
     "tsconfig.json"
