@@ -28,8 +28,35 @@ Do not drift from these without explicit instruction:
 
 - **Stamp shadow** — flat offset, no blur. `4px 4px 0px` (`shadow-stamp`), `2px 2px 0px` (`-sm`), `6px 6px 0px` (`-lg`). Accent uses coral `#ff7b6b` (`shadow-stamp-accent`).
 - **Palette** — coral accent `#ff7b6b`; warm-dark surfaces (`#2a2a28`, `#2e2f2c`, `#3b3c39`); warm off-white text `#d5cfc5`. Full tokens in `tailwind.config.js`.
-- **Typography** — Space Grotesk (display), Literata (prose). Self-hosted via `@fontsource/*` (static weights, imported in `app/assets/css/main.css`) — do not introduce Google Fonts imports.
+- **Typography** — Space Grotesk (display), Literata (prose). Self-hosted via `@fontsource/*` (static weights, imported in `app/assets/css/main.css`) — do not introduce Google Fonts imports. See "Font import rule" + "Font-fallback metric overrides" below for two load-bearing constraints.
 - No rounded corners beyond what's already used, no soft shadows, no gradients.
+
+### Font import rule
+
+Import the full per-weight files (`@fontsource/<family>/<weight>.css`) — **never** the narrow `latin-<weight>.css` variants. The narrow entry omits the `@font-face` declarations for `latin-ext` / `vietnamese` / `cyrillic` / `greek` subsets, so any non-latin glyph (Vietnamese diacritics, em-dash variants, ligature codepoints) silently falls back to the system font. v0.4.1 shipped the narrowed form and Vietnamese consumer sites rendered half their headlines in Arial — caught only after a CF Pages deploy, fixed in v0.4.2.
+
+The full file still lets the browser fetch only the woff2 subsets actually needed on the page, because each `@font-face` carries its own `unicode-range`. The trade-off: ~5 KB of additional `@font-face` rules in critical CSS, paid once. Always pay it.
+
+### Font-fallback metric overrides (CLS fix)
+
+Two `@font-face` blocks in `main.css` re-publish system fonts as synthetic families with Capsize-computed metrics, so they render dimensionally identical to the real webfont during `font-display: swap`:
+
+```
+"Space Grotesk Fallback"  → local('Arial')             + ascent/descent/line-gap/size-adjust overrides
+"Literata Fallback"       → local('Times New Roman')   + the same set
+```
+
+Tailwind `fontFamily.{display,prose}` slots the fallback between the real webfont and the system stack (`['Space Grotesk', 'Space Grotesk Fallback', '-apple-system', ...]`). Every raw `font-family:` declaration in `main.css` and `LocalStorageChecklist.vue` also includes the fallback explicitly — raw CSS bypasses Tailwind's stack.
+
+Measured impact: root CLS 0.1215 → 0.0007 (font-swap shift eliminated). Per-page CLS lands at 0 on prose-heavy routes.
+
+If you change webfonts (different family, different file), recompute the override values:
+
+```sh
+bun scripts/compute-font-fallback.mjs
+```
+
+Paste the printed `@font-face` blocks back into `main.css`. `@capsizecss/*` packages are devDep-only — no runtime cost.
 
 ## Code style
 
