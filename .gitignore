@@ -57,6 +57,7 @@ logs
 # Claude Code local-only files (commit settings.json + skills/, ignore the rest)
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+CLAUDE.local.md
 
 # Scratch
 tmp/*
