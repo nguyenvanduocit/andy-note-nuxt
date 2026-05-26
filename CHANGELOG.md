@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.3](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.4.2...v0.4.3) (2026-05-26)
+
+
+### Bug Fixes
+
+* correct optical alignment of section header slash glyph ([05d76d7](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/05d76d77ad21cbc2100acd952ef476e5e6c35e44))
+
+
+### Documentation
+
+* document font import rule and fallback metric overrides ([51788de](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/51788de4a6955e4ebeb01ccf99ef8e5bd10ec8bc))
+
 ## [0.4.2](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.4.1...v0.4.2) (2026-05-25)
 
 
