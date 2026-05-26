@@ -591,7 +591,11 @@ onBeforeUnmount(() => {
     <div class="section-card-header flex-none">
       <div class="flex items-center justify-between gap-3">
         <h2 class="text-sm font-bold uppercase tracking-tight flex items-center gap-2 truncate">
-          <span class="text-primary">/</span>
+          <!-- Optical nudge: Space Grotesk's solidus descends ~2.8px below the
+               baseline while the adjacent caps/digits sit on it, so flex
+               `items-center` leaves the slash visually sagging ~1.4px low.
+               Lift it back onto the caps' optical center. -->
+          <span class="text-primary -translate-y-[1.5px]">/</span>
           <span class="font-mono text-terminal-text-muted text-xs shrink-0">
             {{ String(sectionIndex).padStart(2, '0') }}.
           </span>
