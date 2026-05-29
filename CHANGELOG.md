@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.5.0...v0.5.1) (2026-05-29)
+
+
+### Bug Fixes
+
+* highlight drilled article in tag listing ([84db6c5](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/84db6c59d4dfbfef1b5cad0f112a8283fba45331))
+
 ## [0.5.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.4.3...v0.5.0) (2026-05-29)
 
 
