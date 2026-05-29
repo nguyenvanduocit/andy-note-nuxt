@@ -6,6 +6,16 @@ const props = defineProps<{
 
 const { fullStack, handleStackClick, scrollToColumn } = useStack()
 
+// `/tags/<slug>` paths render a tag listing instead of a path-resolved page.
+// ContentView resolves content strictly by path and has no tag-membership
+// logic, so without this branch a tag path — whether it's column 0 (a direct
+// `/tags/x` visit) or a deeper `?stack=/tags/x` column — would dead-end in the
+// "Not Found" panel. StackedColumn is the single seam that renders EVERY
+// column, so branching here makes tag pages work identically standalone and
+// stacked. Tags are produced by ContentView's `tag-badge` links.
+const TAG_PREFIX = '/tags/'
+const isTagPath = computed(() => props.path.startsWith(TAG_PREFIX))
+const tagSlug = computed(() => props.path.slice(TAG_PREFIX.length))
 
 /**
  * Click on a column performs two things in order:
@@ -32,15 +42,16 @@ function onClick(event: MouseEvent) {
   >
     <div class="flex-1 min-h-0" @click.capture="onClick">
       <!--
-        :key="path" forces ContentView to remount when this slot's path
+        :key="path" forces the inner view to remount when this slot's path
         prop changes. Without it, a slot whose StackedColumns key is the
         index (kept stable across stack mutations to preserve transition
-        identity) keeps the same ContentView instance — but ContentView's
-        useAsyncData baked the initial path into its cache key at setup
-        time, so the rendered content stays frozen on the original path.
-        Remounting on path change re-runs setup with the new path.
+        identity) keeps the same instance — but useAsyncData baked the
+        initial path/tag into its cache key at setup time, so the rendered
+        content stays frozen on the original path. Remounting on path change
+        re-runs setup with the new path.
       -->
-      <ContentView :key="path" :path="path" :no-throw="true" />
+      <TagListing v-if="isTagPath" :key="path" :tag="tagSlug" :no-throw="true" />
+      <ContentView v-else :key="path" :path="path" :no-throw="true" />
     </div>
   </div>
 </template>
