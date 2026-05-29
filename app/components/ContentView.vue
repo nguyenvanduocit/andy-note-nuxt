@@ -260,7 +260,11 @@ useHead({
 })
 
 function toKebab(str: string) {
-  return str.trim().toLowerCase().replace(/\s+/g, '-')
+  // `String(...)` coerce: an unquoted numeric YAML tag (`- 0.5`, `- 8`) parses
+  // as a number despite the `z.array(z.string())` schema, and a bare `.trim()`
+  // on a number throws "str.trim is not a function" — fatal for the whole
+  // article render. Coercing keeps numeric tags renderable as their string form.
+  return String(str).trim().toLowerCase().replace(/\s+/g, '-')
 }
 
 function toTitleCase(str: string) {
