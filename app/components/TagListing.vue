@@ -48,6 +48,14 @@ const tagSlug = computed(() => toKebab(props.tag))
 // The curated index doc, if any, lives at this exact content path.
 const tagPath = computed(() => `/tags/${tagSlug.value}`)
 
+// Trail highlight: a listed article is "drilled" when it is currently open as a
+// deeper column in the stack. Mirrors ContentView so the active path lights up
+// (`terminal-item--active`) the same way it does in a normal section listing.
+const { fullStack } = useStack()
+function isDrilled(itemPath: string): boolean {
+  return itemPath !== tagPath.value && fullStack.value.includes(itemPath)
+}
+
 // One fetch per tag column. The index doc (full doc, including body for
 // ContentRenderer) and the membership candidate set load in parallel.
 // String key (NOT a function — `useAsyncData`'s first arg must be a string, or
@@ -161,7 +169,7 @@ useHead({
           <li
             v-for="(doc, index) in matches"
             :key="doc.path"
-            class="terminal-item min-w-0"
+            :class="['terminal-item min-w-0', isDrilled(doc.path) && 'terminal-item--active']"
           >
             <NuxtLink
               :to="doc.path"
