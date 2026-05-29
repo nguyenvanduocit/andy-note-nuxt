@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.4.3...v0.5.0) (2026-05-29)
+
+
+### Features
+
+* add tag listing pages at /tags/&lt;slug&gt; with optional curated index ([43af2ff](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/43af2ff48828e85315021e71375d4de32226a53c))
+
+
+### Bug Fixes
+
+* coerce non-string tags in toKebab to survive numeric YAML tags ([1f3c4a1](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/1f3c4a19eb65a39a487679ce48e5e53d8dba0986))
+
 ## [0.4.3](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.4.2...v0.4.3) (2026-05-26)
 
 
