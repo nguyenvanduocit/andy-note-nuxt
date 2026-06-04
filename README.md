@@ -49,7 +49,7 @@ bun install
 bun dev
 ```
 
-Edit `runtimeConfig.public.site` in `nuxt.config.ts` for branding (title, description, tagline, themeColor, logo), `app.head` in the same file for `<title>` / meta tags, and start writing in `content/`.
+Edit `runtimeConfig.public.site` in `nuxt.config.ts` for branding (title, description, tagline, themeColor, logo), set `site` (`name`, plus your production `url`) for the built-in SEO stack, and start writing in `content/`. Per-page `<title>`, meta description, Open Graph, canonical, `sitemap.xml`, and `robots.txt` are generated automatically from each note's frontmatter — no per-project SEO wiring needed.
 
 ## What's included
 

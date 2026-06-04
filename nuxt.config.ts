@@ -18,6 +18,16 @@ import { createResolver } from '@nuxt/kit'
 // paths produced here always point back to the layer.
 const { resolve } = createResolver(import.meta.url)
 
+// Single source for the layer's neutral brand defaults, reused by both config
+// surfaces a consumer overrides: `runtimeConfig.public.site` (read by theme
+// components) and the `@nuxtjs/seo` `site` block (read by sitemap / robots /
+// og:site_name / the <title> template / JSON-LD). One const keeps the two
+// from drifting apart.
+const siteDefaults = {
+  title: 'Andy Notes',
+  description: 'Stacked-column knowledge base — extend, override, publish.',
+}
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
@@ -35,6 +45,12 @@ export default defineNuxtConfig({
     '@nuxt/content',
     '@nuxt/image',
     '@nuxtjs/tailwindcss',
+    // SEO baseline shared by every consumer. The umbrella pulls in sitemap,
+    // robots, og-image, schema-org (JSON-LD), and seo-utils (canonical +
+    // og/twitter inference + the <title> template). Shipping it here is the
+    // whole point of this layer: a consumer inherits a complete SEO stack and
+    // only supplies the one inherently per-site value, `site.url` (below).
+    '@nuxtjs/seo',
     // Toast notifications. Auto-registers `<Toaster />` (client-only) and a
     // plugin exposing `$toast` / the imported `toast()` helper from `vue-sonner`.
     'vue-sonner/nuxt',
@@ -79,8 +95,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       site: {
-        title: 'Andy Notes',
-        description: 'Stacked-column knowledge base — extend, override, publish.',
+        title: siteDefaults.title,
+        description: siteDefaults.description,
         tagline: 'A second-brain theme for Nuxt Content',
         author: 'andy-note-nuxt',
         themeColor: '#ff7b6b',
@@ -89,14 +105,46 @@ export default defineNuxtConfig({
     },
   },
 
+  // @nuxtjs/seo site config — the namespace its modules read (separate from
+  // `runtimeConfig.public.site` above, which theme components read). Consumers
+  // deep-merge their own values; `name`/`description` win field-by-field.
+  site: {
+    name: siteDefaults.title,
+    description: siteDefaults.description,
+    // `url` is intentionally unset. A production origin is consumer/domain
+    // data, not layer wiring — the consumer supplies it via their own `site.url`
+    // (or the NUXT_SITE_URL env). Until then sitemap/canonical URLs are relative
+    // and the modules log a dev-only warning, harmless for the layer's own
+    // standalone build.
+  },
+
+  // Public knowledge base → allow every crawler and advertise the sitemap.
+  // Consumers can tighten this.
+  robots: {
+    sitemap: '/sitemap.xml',
+  },
+
+  // Generated per-route OG images are opt-in. nuxt-og-image needs a renderer
+  // (satori/takumi) + fonts + a post-deploy check that PNGs actually render on
+  // the target host, so it stays off to keep the layer build dependency-light
+  // and deterministic. A static og:image (consumer `app.head` or page
+  // frontmatter `image`/`ogImage`) still works with it disabled; consumers
+  // enable + theme branded cards when they want them.
+  ogImage: {
+    enabled: false,
+  },
+
   app: {
     head: {
       htmlAttrs: { lang: 'en' },
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
-      title: 'Andy Notes — Stacked-Column Knowledge Base',
+      // No static `title` / `description` here. Per-page values are emitted by
+      // ContentView / TagListing via `useSeoMeta`, and seo-utils supplies the
+      // `%s | %siteName` <title> template plus the `site.description` fallback.
+      // A static title would itself flow through that template on listing routes
+      // that set no page title and render a doubled "Site — X · Site".
       meta: [
-        { name: 'description', content: 'A brutalist-terminal Nuxt Content theme for personal notes, guides, and second-brain knowledge bases.' },
         { name: 'theme-color', content: '#ff7b6b' },
       ],
       link: [

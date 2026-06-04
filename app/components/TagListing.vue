@@ -100,12 +100,15 @@ const headerTitle = computed(() => indexDoc.value?.title || displayTag.value)
 // Render only when there is something to show — a curated intro OR matches.
 const isEmpty = computed(() => !hasIndexBody.value && matches.value.length === 0)
 
-useHead({
-  title: `#${headerTitle.value}`,
-  meta: [{
-    name: 'description',
-    content: indexDoc.value?.description || `Pages tagged #${displayTag.value}`,
-  }],
+// Raw `#tag` title — seo-utils (shipped by the layer's @nuxtjs/seo) appends the
+// site name once via its <title> template, and mirrors these into og/twitter.
+useSeoMeta({
+  title: () => `#${headerTitle.value}`,
+  description: () => indexDoc.value?.description || `Pages tagged #${displayTag.value}`,
+  ogTitle: () => `#${headerTitle.value}`,
+  ogDescription: () => indexDoc.value?.description || `Pages tagged #${displayTag.value}`,
+  ogType: 'website',
+  twitterCard: 'summary_large_image',
 })
 </script>
 

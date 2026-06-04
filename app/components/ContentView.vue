@@ -251,14 +251,6 @@ const isList = computed(() => {
   return hierarchy.value.sections.length > 0 || hierarchy.value.rootFiles.length > 0
 })
 
-useHead({
-  title: page.value?.title,
-  meta: [
-    { name: 'description', content: (page.value as any)?.description || '' },
-    { property: 'og:title', content: page.value?.title || '' },
-  ],
-})
-
 function toKebab(str: string) {
   // `String(...)` coerce: an unquoted numeric YAML tag (`- 0.5`, `- 8`) parses
   // as a number despite the `z.array(z.string())` schema, and a bare `.trim()`
@@ -353,6 +345,40 @@ const displayTitle = computed(() => {
   if (page.value?.title) return page.value.title
   const last = path.value.split('/').filter(Boolean).pop()
   return last ? slugToTitle(last) : 'Home'
+})
+
+// --- SEO -------------------------------------------------------------------
+// The layer ships @nuxtjs/seo, so seo-utils owns the <title> template
+// (`%s | %siteName`), canonical, og:url, and og→twitter mirroring. We emit only
+// the raw page-level values it builds on:
+//
+//  - title: ALWAYS `displayTitle` (body H1 → frontmatter title → slug → 'Home'),
+//    never the bare `page.title`. On a section-listing route with no `_index.md`
+//    title, `page.title` is undefined; letting that fall through to a static
+//    app.head title made seo-utils re-template an already-branded string and
+//    render a doubled "Site — X · Site". A real title appends the site name once.
+//  - description: page frontmatter → site default, so it is never empty.
+//  - ogImage: only when the page frontmatter carries a generic `image`/`ogImage`
+//    field. The layer ships no brand image of its own.
+//
+// Emitted from every column in the stack (last write wins). At prerender /
+// initial SSR — the only render a crawler sees — the stack is a single column
+// equal to the route path, so the canonical URL drives these tags. Deliberately
+// NOT setting canonical here: seo-utils owns it (and defers to @nuxtjs/i18n when
+// a consumer adds locales), so emitting one would risk a duplicate.
+const seoSite = useRuntimeConfig().public.site
+const pageImage = computed<string | undefined>(() => {
+  const p = page.value as any
+  return p?.ogImage || p?.image || undefined
+})
+useSeoMeta({
+  title: () => displayTitle.value,
+  description: () => (page.value as any)?.description || seoSite.description || '',
+  ogTitle: () => displayTitle.value,
+  ogDescription: () => (page.value as any)?.description || seoSite.description || '',
+  ogType: () => (page.value && !isList.value ? 'article' : 'website'),
+  ogImage: () => pageImage.value,
+  twitterCard: 'summary_large_image',
 })
 
 const sectionIndex = computed(() => {

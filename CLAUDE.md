@@ -22,6 +22,16 @@ The layer ships **wiring**, the consumer ships **domain**:
 
 **Never** add domain-specific fields, sample data, schemas, or examples to the layer. `.optional()` does not sanitize a leaked domain — field names like `pob_link`, `gem_color`, `recipe_yield` advertise a domain even when optional. Same rule applies to CSS variable defaults, sample markdown, README examples, and config presets.
 
+## SEO (layer-provided)
+
+SEO is **layer wiring** — consumers inherit a complete stack and never re-implement it. `@nuxtjs/seo` (sitemap, robots, og-image, schema-org, seo-utils, site-config) is wired in `nuxt.config.ts`; `ContentView.vue` and `TagListing.vue` emit per-page `useSeoMeta` from content frontmatter.
+
+- **Title** — `ContentView` always feeds seo-utils a raw `displayTitle` (body H1 → frontmatter `title` → slug), never the bare `page.title`. seo-utils applies its default `%s | %siteName` template, appending the site name exactly once. Do **not** reintroduce a static `app.head.title`: on a listing route with no page title it flows back through that template and renders a doubled `Site — X · Site`.
+- **Canonical / hreflang** — owned by seo-utils, which defers to `@nuxtjs/i18n` when a consumer adds locales. The layer emits **no** canonical of its own, so there is never a duplicate. Verified: poe2 (an i18n consumer, built against this layer) renders exactly one canonical on both `/` and `/en`.
+- **`site.url` is the consumer's to supply** — a production origin is domain data, not layer wiring, so it is intentionally unset here. Until a consumer sets it (or `NUXT_SITE_URL`), sitemap / robots / canonical URLs resolve to `localhost` and the modules log a dev-only warning — harmless for the layer's own standalone build.
+- **og-image generation is off** (`ogImage.enabled: false`) — it needs a renderer + fonts + a per-deploy PNG check. A static og:image (consumer `app.head`, or a page frontmatter `image` / `ogImage` field read defensively by `ContentView`) works regardless; consumers opt in to generated cards.
+- The layer ships **no brand image and no `site.url`** — same contract as everything else: layer = machinery, consumer = domain.
+
 ## Brutalist-terminal aesthetic (brand surface)
 
 Do not drift from these without explicit instruction:
