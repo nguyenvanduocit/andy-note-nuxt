@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.6.0...v0.6.1) (2026-06-09)
+
+
+### Bug Fixes
+
+* exclude reserved /tags route from folder nav ([e1299d2](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/e1299d2fa5a25b5a56fc98c178b3d04b0c13e035))
+
 ## [0.6.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.5.1...v0.6.0) (2026-06-04)
 
 
