@@ -362,6 +362,12 @@
     font-size: 1.0625rem;
     line-height: 1.65;
     letter-spacing: 0.008em;
+    /* Stacked columns are narrow (540–670px) and the parent clips overflow,
+       so any unbreakable token — a long URL, a hash, a path — would run off
+       the edge and get cut. `overflow-wrap` is inherited, so this one baseline
+       lets every descendant (paragraphs, links, list items, table text) break
+       a too-long word as a last resort. Code/table get stronger handling below. */
+    overflow-wrap: break-word;
   }
 
   .content > * + * { margin-top: 1.5rem; }
@@ -507,8 +513,14 @@
     @apply bg-terminal-surface-0 text-terminal-text-secondary px-1.5 py-0.5 text-[0.85em] border border-terminal-border-strong;
     font-family: 'SF Mono', Monaco, Consolas, monospace;
     border-radius: 0;
-    white-space: nowrap;
+    /* A long token (a path, a URL, a flag) wraps instead of overflowing the
+       column — it inherits `overflow-wrap: break-word` from `.content`, so a
+       multi-word span still wraps at spaces and only an oversized single token
+       breaks mid-word. `box-decoration-break: clone` re-paints the border +
+       stamp shadow on every wrapped fragment so the chip never loses an edge. */
     box-shadow: 2px 2px 0px 0px theme('colors.terminal.border');
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
     transition: all 0.08s ease-out;
   }
   .content code:not(pre code):hover {
@@ -516,7 +528,7 @@
     box-shadow: 2px 2px 0px 0px theme('colors.primary');
   }
   .content pre {
-    @apply bg-terminal-surface-0 overflow-x-auto my-6 text-sm relative border border-terminal-border;
+    @apply bg-terminal-surface-0 my-6 text-sm relative border border-terminal-border;
     font-family: 'SF Mono', Monaco, Consolas, monospace;
     line-height: 1.6;
     border-radius: 0;
@@ -531,7 +543,13 @@
   .content pre code {
     @apply bg-transparent p-0 border-0 text-terminal-text-secondary;
     font-size: inherit;
-    white-space: pre;
+    /* Wrap long code lines onto the next row rather than trapping a horizontal
+       scrollbar inside an already horizontally-scrolling stack of columns.
+       `pre-wrap` keeps the authored indentation and newlines; `overflow-wrap:
+       anywhere` is the companion that breaks a single unbreakable line (a long
+       hash, a spaceless URL) — `pre-wrap` alone would still overflow on those. */
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
 
   /* Tables — internal grid with cell padding. Edge cells flush horizontally
@@ -548,11 +566,17 @@
   .content th {
     @apply bg-terminal-surface-0 font-bold font-display uppercase tracking-wider text-[11px] text-terminal-text-secondary;
     @apply text-left align-bottom px-3 py-2 border-r border-terminal-border;
+    /* `anywhere` (not just the inherited `break-word`) so a long unbreakable
+       cell token also shrinks the column's min-content width — that lets the
+       auto-layout table collapse to the column instead of forcing it wider
+       than the parent, which would clip the right edge in a narrow column. */
+    overflow-wrap: anywhere;
   }
   .content th:first-child { padding-left: 0; }
   .content th:last-child { padding-right: 0; border-right: 0; }
   .content td {
     @apply text-left align-top px-3 py-2 border-r border-b border-terminal-border;
+    overflow-wrap: anywhere;
   }
   .content td:first-child { padding-left: 0; }
   .content td:last-child { padding-right: 0; border-right: 0; }
