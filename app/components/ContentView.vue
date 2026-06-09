@@ -762,7 +762,7 @@ onBeforeUnmount(() => {
                 :to="file.path"
                 class="flex items-baseline min-w-0 w-full"
               >
-                <span class="title-text font-bold whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-sm">
+                <span class="title-text font-bold whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-lg">
                   {{ file.title || slugToTitle(file.path.split('/').pop() || '') }}
                 </span>
                 <span class="dotted-leader flex-shrink" />
@@ -805,7 +805,7 @@ onBeforeUnmount(() => {
                 :to="section.path"
                 class="flex items-baseline min-w-0 w-full"
               >
-                <span class="title-text font-bold whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-sm">
+                <span class="title-text font-bold whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-lg">
                   {{ section.title }}
                 </span>
                 <span class="dotted-leader flex-shrink" />
@@ -849,7 +849,7 @@ onBeforeUnmount(() => {
                 :to="file.path"
                 class="flex items-baseline min-w-0 w-full"
               >
-                <span class="title-text font-bold whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-sm">
+                <span class="title-text font-bold whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-lg">
                   {{ file.title || slugToTitle(file.path.split('/').pop() || '') }}
                 </span>
                 <span class="dotted-leader flex-shrink" />
