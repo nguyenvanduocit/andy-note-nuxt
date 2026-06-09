@@ -173,11 +173,18 @@ const hierarchy = computed(() => {
     }
   }
 
-  const sectionKeys = Array.from(nestedCountsBySection.keys()).sort((a, b) => {
-    const diff = (sectionRecency.get(b) ?? 0) - (sectionRecency.get(a) ?? 0)
-    if (diff !== 0) return diff
-    return a.localeCompare(b)
-  })
+  const sectionKeys = Array.from(nestedCountsBySection.keys())
+    // `/tags` is the reserved tag-listing route — StackedColumn renders it via
+    // TagListing, not as a path-resolved folder, and its members surface through
+    // the in-article tag badges. So it must not also appear as a plain folder in
+    // the section nav. Scope the exclusion to the root-level reserved route: a
+    // `tags` folder nested under another section stays an ordinary section.
+    .filter(key => normalizePath(`${path.value}/${key}`) !== '/tags')
+    .sort((a, b) => {
+      const diff = (sectionRecency.get(b) ?? 0) - (sectionRecency.get(a) ?? 0)
+      if (diff !== 0) return diff
+      return a.localeCompare(b)
+    })
   const sections: SectionGroup[] = sectionKeys.map((key) => {
     const sectionPath = normalizePath(`${path.value}/${key}`)
     const indexPage = directByPath.get(sectionPath)
