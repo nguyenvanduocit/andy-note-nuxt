@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.5](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.6.4...v0.6.5) (2026-06-09)
+
+
+### Bug Fixes
+
+* set list item title size to 16px ([5b455bd](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/5b455bdd3253587746d92976501f4832d940aaff))
+
 ## [0.6.4](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.6.3...v0.6.4) (2026-06-09)
 
 
