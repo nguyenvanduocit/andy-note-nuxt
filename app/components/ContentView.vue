@@ -762,7 +762,7 @@ onBeforeUnmount(() => {
                 :to="file.path"
                 class="flex items-baseline min-w-0 w-full"
               >
-                <span class="title-text font-bold uppercase whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-sm">
+                <span class="title-text font-bold whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-sm">
                   {{ file.title || slugToTitle(file.path.split('/').pop() || '') }}
                 </span>
                 <span class="dotted-leader flex-shrink" />
@@ -805,7 +805,7 @@ onBeforeUnmount(() => {
                 :to="section.path"
                 class="flex items-baseline min-w-0 w-full"
               >
-                <span class="title-text font-bold uppercase whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-sm">
+                <span class="title-text font-bold whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-sm">
                   {{ section.title }}
                 </span>
                 <span class="dotted-leader flex-shrink" />
@@ -849,7 +849,7 @@ onBeforeUnmount(() => {
                 :to="file.path"
                 class="flex items-baseline min-w-0 w-full"
               >
-                <span class="title-text font-bold uppercase whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-sm">
+                <span class="title-text font-bold whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-sm">
                   {{ file.title || slugToTitle(file.path.split('/').pop() || '') }}
                 </span>
                 <span class="dotted-leader flex-shrink" />
@@ -865,7 +865,7 @@ onBeforeUnmount(() => {
       <!-- ARTICLE VIEW: only reached when a page exists with content body and no children. -->
       <article v-else-if="page" class="px-5 py-6 md:py-8 max-w-[75ch]">
         <header class="mb-8 pb-5 border-b-2 border-dashed border-terminal-border">
-          <h1 class="text-2xl md:text-3xl font-display font-bold uppercase tracking-tight leading-tight text-terminal-text mb-3">
+          <h1 class="text-2xl md:text-3xl font-display font-bold tracking-tight leading-tight text-terminal-text mb-3">
             {{ displayTitle }}
           </h1>
 
