@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.6.1...v0.6.2) (2026-06-09)
+
+
+### Bug Fixes
+
+* wrap long code, inline code, and table content in narrow columns ([e2eaeca](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/e2eaecaff1d74c56137cc19c6796e26af5b4dee3))
+
 ## [0.6.1](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.6.0...v0.6.1) (2026-06-09)
 
 
