@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.4](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.6.3...v0.6.4) (2026-06-09)
+
+
+### Bug Fixes
+
+* enlarge list item titles for readability ([46dfc85](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/46dfc85509d5ced488d537b5d8568219566c1c5e))
+
 ## [0.6.3](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.6.2...v0.6.3) (2026-06-09)
 
 
