@@ -54,6 +54,7 @@ export default defineNuxtConfig({
     // Toast notifications. Auto-registers `<Toaster />` (client-only) and a
     // plugin exposing `$toast` / the imported `toast()` helper from `vue-sonner`.
     'vue-sonner/nuxt',
+    '@nuxtjs/algolia',
   ],
 
   // Browser-feedback overlay — disable in child by setting `aiAnnotator: false`.
