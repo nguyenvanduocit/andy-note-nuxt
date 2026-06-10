@@ -91,12 +91,12 @@ watch(
 
 <template>
   <!--
-    One sticky-peek stack, two axes. Mobile (<md): a vertical y-scroller —
-    full-width, viewport-height columns that peek at the TOP. md+ : the
-    horizontal x-scroller with columns peeking at the LEFT. Same .stacked-column
-    sticky mechanism either way (see its scoped styles); only the axis flips.
-    The breakpoint mirrors useStack's `(max-width: 767px)` matchMedia exactly
-    (Tailwind md = 768px).
+    Two layouts, one container. Mobile (<md): a vertical y-scroller — full-width
+    columns flow at their natural height as a SINGLE scroll, each section header
+    sticky at the top (no per-column inner scroll → no double scroll). md+ : the
+    horizontal x-scroller — the sticky-peek stack with columns peeking
+    --stack-peek at the LEFT. The breakpoint mirrors useStack's
+    `(max-width: 767px)` matchMedia exactly (Tailwind md = 768px).
   -->
   <div
     ref="container"

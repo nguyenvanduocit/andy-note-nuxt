@@ -125,7 +125,7 @@ useSeoMeta({
     <p class="text-sm mt-2">No pages carry this tag yet.</p>
   </div>
 
-  <div v-else class="flex flex-col h-full">
+  <div v-else class="column-pane flex flex-col h-full">
     <div class="section-card-header flex-none">
       <div class="flex items-center justify-between gap-3">
         <h2 class="text-sm font-bold uppercase tracking-tight flex items-center gap-2 truncate">
@@ -143,7 +143,7 @@ useSeoMeta({
       </div>
     </div>
 
-    <div class="flex-1 overflow-y-auto min-h-0">
+    <div class="column-pane__scroll flex-1 overflow-y-auto min-h-0">
       <!-- Curated intro: the body of content/tags/<slug>.md, when present. -->
       <div v-if="hasIndexBody" class="content px-5 pt-6">
         <ContentRenderer :value="indexDoc" />

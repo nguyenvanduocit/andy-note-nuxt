@@ -128,32 +128,26 @@ export function useStack() {
 
     activeIndex.value = index
 
-    const stackPeek =
-      parseInt(getComputedStyle(document.documentElement).getPropertyValue('--stack-peek'), 10) || 48
-
-    // Mobile: same sticky-peek geometry, rotated to the vertical axis. Each
-    // column is a full-width, viewport-height panel sticky at top = idx*peek
-    // (see the .stacked-column mobile rules), so the formula mirrors the
-    // horizontal one with the column's height = the container's client height:
-    //   col K viewport-y = K * stack-peek
-    //   K * colHeight − scrollTop = K * stack-peek  ⇒  scrollTop = K * (colHeight − peek)
-    // For the last column this exceeds max scroll and the browser clamps,
-    // leaving it bottom-aligned below the accumulated peek strips. The
-    // expectedFullLength clamp guards the same mid-leave scrollHeight shrink the
-    // horizontal path does, just on the Y axis.
+    // Mobile: one vertical scroll of flowing full-width sections (see
+    // StackedColumns + the .stacked-column mobile rules — no per-column inner
+    // scroll). Bring the target column's top edge to the container's top, where
+    // its sticky header pins. The column is position:static here, so its
+    // getBoundingClientRect().top is its real flow position (no sticky-rect
+    // pitfall). Trailing trimmed columns sit BELOW the target, so their removal
+    // never shifts this offset; expectedFullLength (a horizontal scrollWidth
+    // concern) is ignored on this axis.
     if (isMobile.value) {
-      const colHeight = container.clientHeight
-      let targetScrollTop = index * (colHeight - stackPeek)
-      if (expectedFullLength !== undefined) {
-        const postFadeMax = expectedFullLength * colHeight - container.clientHeight
-        if (postFadeMax < targetScrollTop) targetScrollTop = Math.max(0, postFadeMax)
-      }
-      container.scrollTo({ top: targetScrollTop, behavior: 'smooth' })
+      const col = container.querySelector<HTMLElement>(`[data-column-index="${index}"]`)
+      if (!col) return
+      const top =
+        container.scrollTop + (col.getBoundingClientRect().top - container.getBoundingClientRect().top)
+      container.scrollTo({ top, behavior: 'smooth' })
       return
     }
 
-    const colWidth =
-      parseInt(getComputedStyle(document.documentElement).getPropertyValue('--column-width'), 10) || 640
+    const rootStyles = getComputedStyle(document.documentElement)
+    const colWidth = parseInt(rootStyles.getPropertyValue('--column-width'), 10) || 640
+    const stackPeek = parseInt(rootStyles.getPropertyValue('--stack-peek'), 10) || 48
     let targetScrollLeft = index * (colWidth - stackPeek)
 
     if (expectedFullLength !== undefined) {

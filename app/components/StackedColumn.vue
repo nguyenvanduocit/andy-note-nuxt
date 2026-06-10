@@ -82,24 +82,30 @@ function onClick(event: MouseEvent) {
   box-shadow: -3px 0 0 #474541;
 }
 
-/* Mobile (<md): the SAME sticky-peek stack, rotated 90° to the vertical axis
-   (StackedColumns becomes the y-scroller). Each column is a full-width,
-   viewport-height panel; earlier columns peek `--stack-peek` at the TOP via
-   position:sticky/top (mirroring desktop's sticky/left), z-index still ascends
-   with --col-idx so later columns paint over earlier peeks. The column keeps
-   its desktop internal structure (header + internal-scroll body), so long
-   articles scroll inside the active panel below the accumulated peek strips.
-   The left outline becomes a top outline — the later column's top shadow paints
-   over the earlier peek's bottom edge for a clean divider between strips. */
+/* Mobile (<md): ONE scroll, not two. The horizontal sticky-peek stack flattens
+   into full-width sections that flow at their natural content height inside the
+   single y-scroller (StackedColumns). There is no per-column inner scroll, so
+   the page has exactly one scroll: read the active (lowest) column and, at its
+   top, the same gesture flows straight into the column above. Each section's
+   header stays pinned (sticky; top:0 — see main.css) so the current column's
+   title is always visible. Accumulating peek strips are intentionally dropped:
+   they need a viewport-height column with its own inner scroll, and that inner
+   scroll nested in the page scroll is the "two competing scrolls" that reads as
+   janky on touch. display:block so the inner flex wrapper can't collapse; the
+   left/right column dividers restate as a single horizontal rule between
+   sections. */
 @media (max-width: 767px) {
   .stacked-column {
-    flex: 0 0 100%;
+    display: block;
+    flex: none;
     width: 100%;
     min-width: 0;
-    left: auto;
-    top: calc(var(--col-idx, 0) * var(--stack-peek, 48px));
-    box-shadow: 0 -3px 0 #474541;
+    height: auto;
+    position: static;
+    overflow: visible;
+    box-shadow: none;
     border-right: 0;
+    border-bottom: 3px solid #474541;
   }
 }
 </style>

@@ -632,6 +632,23 @@
   }
 }
 
+/* Mobile stack (<md): ONE scroll. The columns flatten into full-width sections
+   that flow at natural height in the single y-scroller (see StackedColumns +
+   the `.stacked-column` mobile rules). Release each column's inner fixed-height
+   scroller — the pane stops capping its height and the body stops being a
+   `flex-1 min-h-0` scroller — so the article flows into the page scroll instead
+   of scrolling inside the column. That eliminates the inner-scroll-nested-in-
+   page-scroll double scroll. The section header stays pinned at the top so the
+   active column's title is always visible while reading. Unlayered on purpose —
+   it must override the `h-full` / `flex-1` / `overflow-y-auto` Tailwind
+   utilities (which sit in @layer utilities) via source order. The breakpoint
+   matches useStack's `(max-width: 767px)` matchMedia. */
+@media (max-width: 767px) {
+  .column-pane { height: auto; }
+  .column-pane__scroll { flex: none; overflow: visible; }
+  .section-card-header { position: sticky; top: 0; z-index: 5; }
+}
+
 /* ---------- Brutalist toaster (vue-sonner) ----------
    vue-sonner ships its own CSS via `vue-sonner/style.css` (loaded by the
    nuxt module). We override the exposed CSS variables + a few structural

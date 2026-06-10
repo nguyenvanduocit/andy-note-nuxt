@@ -622,7 +622,7 @@ onBeforeUnmount(() => {
     <p class="text-sm mt-2">This page doesn't exist or has been moved.</p>
   </div>
 
-  <div v-else class="flex flex-col h-full">
+  <div v-else class="column-pane flex flex-col h-full">
     <!-- Column header — sits outside the scroll container so the scrollbar
          never overlaps it. flex-none keeps it at fixed height. -->
     <div class="section-card-header flex-none">
@@ -723,8 +723,11 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Scrollable content area — grows to fill remaining height. Scrollbar
-         is scoped here, so it never intrudes into the header above. -->
-    <div class="flex-1 overflow-y-auto min-h-0">
+         is scoped here, so it never intrudes into the header above. This is the
+         column's internal scroll on BOTH axes' layouts: the column is a
+         viewport-height panel (desktop fixed-width, mobile full-width sticky)
+         and this body scrolls its article within it. -->
+    <div class="column-pane__scroll flex-1 overflow-y-auto min-h-0">
       <!-- LIST VIEW: any path that has children renders as a section listing. -->
       <template v-if="isList">
         <div v-if="hasRenderedBody" class="content px-5 pt-6">
