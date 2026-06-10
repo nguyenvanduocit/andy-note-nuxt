@@ -10,6 +10,8 @@ updated: 2026-05-25
 
 Mỗi file `.md` trong `content/` mở đầu bằng frontmatter YAML giữa hai
 dòng `---`. Theme parse field theo schema trong `content.config.ts`.
+Trang này là cheatsheet — workflow viết note nằm ở
+[Writing Content](/guides/writing-content).
 
 ## Core fields
 
@@ -17,7 +19,7 @@ dòng `---`. Theme parse field theo schema trong `content.config.ts`.
 |---|---|---|---|
 | `title` | string | Khuyên dùng | Header column, listing item, `<title>` HTML |
 | `description` | string | Khuyên dùng | `<meta name="description">`, OG, section listing |
-| `tags` | string[] | Optional | Render thành tag pills dưới H1 |
+| `tags` | string[] | Optional | Render thành tag pills dưới H1 — mỗi tag link tới `/tags/<tag>`, vd [/tags/reference](/tags/reference) |
 | `created` | YYYY-MM-DD | Optional | Sort "Latest" section, badge recency |
 | `updated` | YYYY-MM-DD | Optional | Sort listing, badge recency (ưu tiên > `created`) |
 | `document_type` | string | Optional | Phân loại (default: undefined). Special value `"convention"` ẩn khỏi listing. |

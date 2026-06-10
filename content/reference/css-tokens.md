@@ -10,7 +10,8 @@ updated: 2026-05-25
 
 Theme expose token qua `tailwind.config.js`. Override ở project con
 bằng cách ship file `tailwind.config.js` cùng key — `@nuxtjs/tailwindcss`
-sẽ merge.
+sẽ merge. Workflow override từng surface (màu, font, CSS) nằm ở
+[Customization](/guides/customization).
 
 ## Colors
 
@@ -76,6 +77,8 @@ token) vì cần animate / responsive:
 | `--column-width` | `640px` | Width của một stacked column |
 | `--column-min-width` | `420px` | Floor để column không co quá |
 | `--stack-peek` | `48px` | Phần peek của cột cha khi stack scroll |
+
+Ba variable này drive scroll geometry của [StackedColumn](/reference/components).
 
 Đổi giá trị này bằng cách override `:root` trong CSS project con:
 

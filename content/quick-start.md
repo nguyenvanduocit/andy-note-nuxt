@@ -8,7 +8,7 @@ updated: 2026-05-25
 
 # Quick Start
 
-The shortest path from zero → a working stacked-column site. Every step has a copy-paste command — no need to detour through the reference docs.
+The shortest path from zero → a working stacked-column site. Every step has a copy-paste command — no need to detour through the [reference docs](/reference). If you'd rather understand the mental model first, start with [Getting Started](/guides/getting-started).
 
 ## 1. Create a child project
 
@@ -65,3 +65,10 @@ bun generate
 ```
 
 Drop that folder onto Cloudflare Pages / Netlify / Vercel / GitHub Pages — done.
+
+## Next steps
+
+- [Getting Started](/guides/getting-started) — the stacked-column mental model and content folder structure.
+- [Writing Content](/guides/writing-content) — frontmatter, markdown syntax, tags, organizing notes.
+- [Customization](/guides/customization) — branding, palette, fonts, component overrides.
+- [Reference](/reference) — the complete API surface: [frontmatter fields](/reference/frontmatter), [components](/reference/components), [CSS tokens](/reference/css-tokens).

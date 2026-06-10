@@ -10,7 +10,8 @@ updated: 2026-05-22
 
 Trước khi viết content, đọc qua 5 phút để hiểu **mental model**. Không
 hiểu model thì organizing file sẽ ngược với cách theme render — và bạn
-sẽ phải sửa nhiều.
+sẽ phải sửa nhiều. Nếu bạn chỉ cần lệnh copy-paste để chạy ngay, xem
+[Quick Start](/quick-start) rồi quay lại đây sau.
 
 ## Stacked-column navigation
 
@@ -54,7 +55,7 @@ menu thủ công cho từng note.
 
 ## Listing vs article view
 
-ContentView tự switch giữa hai layout dựa trên nội dung:
+[ContentView](/reference/components) tự switch giữa hai layout dựa trên nội dung:
 
 - **Listing view** — khi path có con (folder hoặc index.md với
   children). Render section heading + danh sách bài.

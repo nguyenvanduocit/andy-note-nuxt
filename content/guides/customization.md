@@ -93,7 +93,9 @@ tương ứng.
 ## Override component
 
 Mọi component trong `app/components/` của theme đều override được bằng
-cách tạo file cùng tên ở project con. Ví dụ thay `ContentView.vue`:
+cách tạo file cùng tên ở project con — danh sách component, prop, và
+slot nằm ở [Reference / Components](/reference/components). Ví dụ thay
+`ContentView.vue`:
 
 ```
 my-notes/

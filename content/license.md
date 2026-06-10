@@ -20,7 +20,7 @@ License **không** áp dụng cho **content do bạn viết** trong child projec
 
 ## Override file này
 
-Khi bạn extend theme thành child project và muốn dùng license khác, **tạo `content/license.md` ở child project**. Nuxt Layers sẽ ưu tiên file của child, mặc file mặc định ở theme.
+Khi bạn extend theme thành child project và muốn dùng license khác, **tạo `content/license.md` ở child project**. Nuxt Layers sẽ ưu tiên file của child, mặc file mặc định ở theme. Đây là cùng cơ chế override áp dụng cho component và CSS — xem [Customization](/guides/customization).
 
 Ví dụ child project muốn dùng CC-BY-4.0 cho content:
 

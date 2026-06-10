@@ -38,7 +38,8 @@ updated: 2026-05-20
 ```
 
 - **`tags`** — array of string. Render thành tag pills dưới H1. Click
-  tag dẫn đến `/tags/<tag>` (nếu bạn build trang đó).
+  tag dẫn đến `/tags/<tag>` — xem [/tags/reference](/tags/reference) để
+  thấy một tag index hoàn chỉnh trông như thế nào.
 - **`created` / `updated`** — ISO date string (`YYYY-MM-DD` đủ). Theme
   dùng để sort section "Latest" và để hiện badge recency.
 
@@ -48,7 +49,9 @@ field schema và những field optional khác.
 ## Body markdown
 
 Theme dùng [Nuxt Content v3](https://content.nuxt.com) — hỗ trợ
-markdown chuẩn + MDC components.
+markdown chuẩn + MDC components. Theme ship sẵn một MDC component:
+[LocalStorageChecklist](/reference/components) — checklist persist state
+qua localStorage, nhúng thẳng vào markdown.
 
 ### Heading
 

@@ -10,7 +10,7 @@ updated: 2026-05-25
 
 Theme ship 4 component chính, tất cả ở `app/components/`. Override bằng
 cách tạo file cùng tên trong project con — Vue resolver ưu tiên project
-con.
+con. Workflow override chi tiết nằm ở [Customization](/guides/customization).
 
 ## StackedColumns
 
@@ -43,7 +43,9 @@ Một column đơn lẻ trong stack. Wrap `ContentView` + handle click logic
 File: `app/components/ContentView.vue`
 
 Render nội dung markdown của một path. Switch tự động giữa **listing
-view** (folder có con) và **article view** (leaf page).
+view** (folder có con) và **article view** (leaf page) — cơ chế switch
+giải thích ở [Getting Started](/guides/getting-started). Article view
+render tag pills + frontmatter theo schema ở [Frontmatter](/reference/frontmatter).
 
 | Prop | Type | Default | Note |
 |---|---|---|---|
@@ -55,8 +57,9 @@ view** (folder có con) và **article view** (leaf page).
 File: `app/components/LocalStorageChecklist.vue`
 
 MDC component để dùng trong markdown — render checklist mà state persist
-qua localStorage. Gọi từ markdown bằng MDC block syntax + YAML frontmatter
-để truyền `items` array:
+qua localStorage. Cách viết MDC block trong note nằm ở
+[Writing Content](/guides/writing-content). Gọi từ markdown bằng MDC block
+syntax + YAML frontmatter để truyền `items` array:
 
 ```mdc
 ::local-storage-checklist
@@ -108,4 +111,6 @@ const {
 ```
 
 Đọc inline comment trong file để hiểu thuật toán đếm width column,
-debounce intersection observer, và transition timing.
+debounce intersection observer, và transition timing. Geometry của stack
+(`--column-width`, `--stack-peek`) khai báo dạng CSS variable — xem
+[CSS Tokens](/reference/css-tokens) để override.
