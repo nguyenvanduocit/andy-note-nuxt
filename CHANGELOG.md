@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.7.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.6.5...v0.7.0) (2026-06-10)
+
+
+### Features
+
+* open web-external markdown links in a new tab ([8a14690](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/8a146909c8311f904967eabfd89d52be2158674f))
+* pin the root index as permanent column 0 ([ad848a4](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/ad848a4ce467396522c702828b5f875676de8a03))
+* support vertical sticky-peek mobile stack ([4bdf3e5](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/4bdf3e538af6eadc0b8fd880148142bcafe80736))
+* wire @nuxtjs/algolia search module ([c1defcf](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/c1defcfede099c3e20697ac743fc4eb33bf680c9))
+
+
+### Bug Fixes
+
+* use a single scroll for the mobile column stack ([27ac37e](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/27ac37e9e56e7db03d854f46db351fee02cffec6))
+
+
+### Documentation
+
+* cross-link the default content pages ([4c75349](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/4c75349d3ec2b860cd5d055b8a5c3a597c5a29f0))
+
 ## [0.6.5](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.6.4...v0.6.5) (2026-06-09)
 
 
