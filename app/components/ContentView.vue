@@ -31,10 +31,11 @@ const props = defineProps<{
 const path = computed(() => props.path)
 
 // Stacked-column "trail" highlight: a list item is considered "drilled" when
-// its path appears in the full column stack (i.e. it has been clicked open as
-// a deeper column). The current column's own path is excluded so a section
-// listing doesn't highlight itself. On mobile / standalone render `fullStack`
-// only contains the current path, so nothing highlights — correct.
+// its path appears in the full column stack (i.e. it is currently open as a
+// deeper column). The current column's own path is excluded so a section
+// listing doesn't highlight itself. Because the root index is the permanent
+// column 0, its listing highlights the open article on every page — including
+// a direct deep-link visit.
 const { fullStack } = useStack()
 function isDrilled(itemPath: string): boolean {
   return itemPath !== path.value && fullStack.value.includes(itemPath)
@@ -66,51 +67,47 @@ if (malformedPath.value && !props.noThrow) {
 // Guard all queries: when path is malformed, skip them entirely (queryCollection
 // would crash with assertSafeQuery before we could handle the error).
 //
-// Page + children fire in parallel via Promise.all instead of two sequential
-// awaits. With key=index TransitionGroup, every stack mutation mounts a fresh
-// ContentView for each column (StackedColumn :key="path" remounts), so the
-// SSR pass for a 4-deep stack used to issue 8 SQL queries serialized in
-// setup order. Parallelizing halves wall-clock cost — both queries hit the
-// same SQLite connection but the second no longer waits for the first to
-// resolve before its `where(...)` plan is built and executed.
+// Page + children kick off here but are awaited only at the end of setup
+// (after useSeoMeta — see the SEO block for why that order is load-bearing).
+// Both queries run in parallel, and with key=index TransitionGroup every
+// stack mutation mounts a fresh ContentView per column (StackedColumn
+// :key="path" remounts), so deferring the await also keeps a deep stack's
+// SSR pass from serializing its SQL queries in setup order.
 //
 // Path = '/' must use prefix '/' (not '//') so the LIKE matches all rows.
 const childrenPrefix = path.value === '/' ? '/' : `${path.value}/`
-const [{ data: page }, { data: allChildren }] = await Promise.all([
-  useAsyncData(`content-${path.value}`, () => {
-    if (malformedPath.value) return Promise.resolve(null)
-    return queryCollection('content')
-      .where('path', '=', path.value)
-      .first()
-  }),
-  useAsyncData(`children-${path.value}`, () => {
-    if (malformedPath.value) return Promise.resolve([])
-    return queryCollection('content')
-      .where('path', 'LIKE', `${childrenPrefix}%`)
-      .where('path', '<>', path.value)
-      .where('path', 'NOT LIKE', '%/_index')
-      // The convention filter used to live here as a SQL `where`, but SQL's
-      // three-valued logic treats `NULL <> 'convention'` as NULL (not true),
-      // so any row whose schema doesn't set document_type — i.e. most rows —
-      // got silently filtered out and listings rendered as empty article
-      // views. The client-side hierarchy filter (`!== 'convention'`) handles
-      // this correctly in JS where `undefined !== 'convention'` is true.
-      .select('path', 'title', 'description', 'document_type', 'updated', 'created')
-      .all()
-  }),
-])
+const pageQuery = useAsyncData(`content-${path.value}`, () => {
+  if (malformedPath.value) return Promise.resolve(null)
+  return queryCollection('content')
+    .where('path', '=', path.value)
+    .first()
+})
+const childrenQuery = useAsyncData(`children-${path.value}`, () => {
+  if (malformedPath.value) return Promise.resolve([])
+  return queryCollection('content')
+    .where('path', 'LIKE', `${childrenPrefix}%`)
+    .where('path', '<>', path.value)
+    .where('path', 'NOT LIKE', '%/_index')
+    // The convention filter used to live here as a SQL `where`, but SQL's
+    // three-valued logic treats `NULL <> 'convention'` as NULL (not true),
+    // so any row whose schema doesn't set document_type — i.e. most rows —
+    // got silently filtered out and listings rendered as empty article
+    // views. The client-side hierarchy filter (`!== 'convention'`) handles
+    // this correctly in JS where `undefined !== 'convention'` is true.
+    .select('path', 'title', 'description', 'document_type', 'updated', 'created')
+    .all()
+})
+const page = pageQuery.data
+const allChildren = childrenQuery.data
 
 // "Not found" only when path is malformed OR there's no page AND no children to list.
 // Pure section paths (`/builds`, `/`) are valid even without `_index.md` if children exist.
+// The throw lives after the data await at the end of setup — data isn't loaded yet here.
 const notFound = computed(() => {
   if (malformedPath.value) return true
   if (page.value) return false
   return (allChildren.value?.length ?? 0) === 0
 })
-
-if (notFound.value && !props.noThrow) {
-  throw createError({ statusCode: 404, message: 'Page not found' })
-}
 
 // Recency timestamp for sort: prefer `updated`, fallback `created`, fallback 0 (oldest).
 // Returns ms since epoch so a single numeric compare works for desc sort.
@@ -368,18 +365,34 @@ const displayTitle = computed(() => {
 //  - ogImage: only when the page frontmatter carries a generic `image`/`ogImage`
 //    field. The layer ships no brand image of its own.
 //
-// Emitted from every column in the stack (last write wins). At prerender /
-// initial SSR — the only render a crawler sees — the stack is a single column
-// equal to the route path, so the canonical URL drives these tags. Deliberately
-// NOT setting canonical here: seo-utils owns it (and defers to @nuxtjs/i18n when
-// a consumer adds locales), so emitting one would risk a duplicate.
+// Emitted from every column in the stack; unhead resolves duplicate tags by
+// entry registration order, so the DEEPEST column wins. That order is only
+// deterministic because this call sits in the synchronous part of setup —
+// before the data await below. Were it after the await, registration order
+// would follow query-resolution order, and the permanent root column (whose
+// site-wide children query is the slowest) could clobber a prerendered
+// article's tags with the homepage's. At prerender / initial SSR the deepest
+// column IS the route's own page, so the canonical URL drives these tags.
+// Deliberately NOT setting canonical here: seo-utils owns it (and defers to
+// @nuxtjs/i18n when a consumer adds locales), so emitting one would risk a
+// duplicate.
 const seoSite = useRuntimeConfig().public.site
+// seo-utils' `%siteName` template param resolves from nuxt-site-config, so the
+// dedupe below must compare against THAT name — not `runtimeConfig.public.site`
+// (the theme namespace), which a consumer may set to a different string.
+const siteName = useSiteConfig().name
+// When a page's own title IS the site name — typical for the root index, whose
+// H1 is the brand — emit an empty title. seo-utils' `%s %separator %siteName`
+// template trims the dangling separator around the empty `%s` and renders the
+// site name exactly once; passing the name through verbatim would render a
+// doubled "Site | Site".
+const seoTitle = computed(() => (displayTitle.value === siteName ? '' : displayTitle.value))
 const pageImage = computed<string | undefined>(() => {
   const p = page.value as any
   return p?.ogImage || p?.image || undefined
 })
 useSeoMeta({
-  title: () => displayTitle.value,
+  title: () => seoTitle.value,
   description: () => (page.value as any)?.description || seoSite.description || '',
   ogTitle: () => displayTitle.value,
   ogDescription: () => (page.value as any)?.description || seoSite.description || '',
@@ -387,6 +400,15 @@ useSeoMeta({
   ogImage: () => pageImage.value,
   twitterCard: 'summary_large_image',
 })
+
+// Suspend until both queries land — everything below (and the template)
+// reads resolved data. This await is intentionally the FIRST one in setup;
+// see the query-kickoff and SEO comments above.
+await Promise.all([pageQuery, childrenQuery])
+
+if (notFound.value && !props.noThrow) {
+  throw createError({ statusCode: 404, message: 'Page not found' })
+}
 
 const sectionIndex = computed(() => {
   const segments = path.value.split('/').filter(Boolean)

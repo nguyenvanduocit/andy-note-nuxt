@@ -1,8 +1,9 @@
 <script setup lang="ts">
 // Tag listing — the INNER content of a `/tags/<slug>` column. StackedColumn
-// provides the `.stacked-column` wrapper (sizing, sticky stacking, mobile
-// 100vw), so this owns only the inner chrome: an optional authored intro + a
-// scrollable Articles list, mirroring ContentView's inner structure. Because
+// provides the `.stacked-column` wrapper (sizing, sticky-peek stacking —
+// horizontal on desktop, vertical on mobile), so this owns only the inner
+// chrome: an optional authored intro + a scrollable Articles list, mirroring
+// ContentView's inner structure (header + internal-scroll body). Because
 // StackedColumn renders every column, this works identically whether the tag
 // path is column 0 (a direct `/tags/x` visit) or a deeper `?stack=/tags/x`
 // column — clicks on listed articles bubble to StackedColumn's `@click.capture`
@@ -62,7 +63,11 @@ function isDrilled(itemPath: string): boolean {
 // it's read as the handler and the real handler becomes options). StackedColumn
 // passes `:key="path"`, so this remounts when the tag changes and the setup-time
 // key/path are always current.
-const { data } = await useAsyncData(
+//
+// Kicked off here, awaited after useSeoMeta below — mirrors ContentView: SEO
+// entries must register in the synchronous part of setup so unhead's
+// entry-order dedupe resolves to the deepest column deterministically.
+const tagQuery = useAsyncData(
   `tag-${tagSlug.value}`,
   async () => {
     const [indexDoc, docs] = await Promise.all([
@@ -72,6 +77,7 @@ const { data } = await useAsyncData(
     return { indexDoc, docs }
   },
 )
+const data = tagQuery.data
 
 // Content docs are loosely typed (the theme's own ContentView reads
 // `page.value as any` for the same reason) — frontmatter shape varies per
@@ -110,6 +116,10 @@ useSeoMeta({
   ogType: 'website',
   twitterCard: 'summary_large_image',
 })
+
+// Suspend until the fetch lands — kept after useSeoMeta so registration order
+// stays the column order (see the kickoff comment above).
+await tagQuery
 </script>
 
 <template>

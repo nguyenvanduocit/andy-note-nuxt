@@ -79,10 +79,19 @@ export function useStack() {
     return arr.filter((p): p is string => typeof p === 'string' && p.length > 0)
   })
 
-  /** [route.path, ...stack] — all column paths including column 0.
+  /** ['/', route.path (when non-root), ...stack] — all column paths.
+   *
+   *  The root index is permanent column 0: a deep-linked article would
+   *  otherwise render as a lone column with no way to navigate anywhere.
+   *  It is implicit — never serialized into the URL — so canonical article
+   *  URLs stay clean and existing `?stack=` links keep working.
+   *
    *  route.path passes through normalizePath so a host-injected trailing
    *  slash (e.g. CF Pages 308 `/foo` → `/foo/`) doesn't break content lookup. */
-  const fullStack = computed<string[]>(() => [normalizePath(route.path), ...stack.value])
+  const fullStack = computed<string[]>(() => {
+    const path = normalizePath(route.path)
+    return path === '/' ? ['/', ...stack.value] : ['/', path, ...stack.value]
+  })
 
   /** Currently focused column index — updated by callers (e.g. IntersectionObserver in US-005) */
   const activeIndex = ref<number>(0)
@@ -208,10 +217,9 @@ export function useStack() {
       return
     }
 
-    const trimmedStack = stack.value.slice(0, Math.max(fromIndex, 0))
-    const finalStack = [...trimmedStack, normalized]
-    // Final fullStack length = column 0 (route.path) + trimmedStack + new column.
-    const finalFullLength = fromIndex + 2
+    // Final stack: keep columns 0..fromIndex, the new column lands at fromIndex+1.
+    const finalFull = [...fullPaths.slice(0, fromIndex + 1), normalized]
+    const finalFullLength = finalFull.length
     // Slots that genuinely unmount. With key=index, slot at fromIndex+1 keeps
     // identity (path swap, no transition); only slots strictly beyond it leave.
     const leavingCount = Math.max(0, fullPaths.length - finalFullLength)
@@ -228,10 +236,29 @@ export function useStack() {
     // Single atomic mutation. Slot at fromIndex+1 path-swaps (silent), slots
     // beyond it run the staggered leave-fade. ScrollWidth stays constant
     // throughout the fade because leaving slots still occupy flex width.
-    await router.replace({
-      path: route.path,
-      query: { ...rest, stack: finalStack },
-    })
+    //
+    // Encoding finalFull back into a URL: column 0 ('/') is implicit and never
+    // serialized. When route.path is non-root it occupies column 1, so deeper
+    // columns ride in `?stack`. The one case where route.path does NOT survive
+    // the trim — clicking a link inside the root column while deep-linked on
+    // an article — navigates to the target's own path instead, which is its
+    // clean canonical URL.
+    const routePath = normalizePath(route.path)
+    if (routePath === '/') {
+      await router.replace({
+        path: route.path,
+        query: { ...rest, stack: finalFull.slice(1) },
+      })
+    }
+    else if (finalFull[1] === routePath) {
+      await router.replace({
+        path: route.path,
+        query: { ...rest, stack: finalFull.slice(2) },
+      })
+    }
+    else {
+      await router.replace({ path: normalized, query: rest })
+    }
     await nextTick()
 
     // Scroll while leaving slots still occupy width. Pass finalFullLength so
