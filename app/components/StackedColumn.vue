@@ -82,11 +82,24 @@ function onClick(event: MouseEvent) {
   box-shadow: -3px 0 0 #474541;
 }
 
+/* Mobile (<md): the SAME sticky-peek stack, rotated 90° to the vertical axis
+   (StackedColumns becomes the y-scroller). Each column is a full-width,
+   viewport-height panel; earlier columns peek `--stack-peek` at the TOP via
+   position:sticky/top (mirroring desktop's sticky/left), z-index still ascends
+   with --col-idx so later columns paint over earlier peeks. The column keeps
+   its desktop internal structure (header + internal-scroll body), so long
+   articles scroll inside the active panel below the accumulated peek strips.
+   The left outline becomes a top outline — the later column's top shadow paints
+   over the earlier peek's bottom edge for a clean divider between strips. */
 @media (max-width: 767px) {
   .stacked-column {
-    flex: 0 0 100vw;
-    min-width: 100vw;
-    position: static;
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 0;
+    left: auto;
+    top: calc(var(--col-idx, 0) * var(--stack-peek, 48px));
+    box-shadow: 0 -3px 0 #474541;
+    border-right: 0;
   }
 }
 </style>

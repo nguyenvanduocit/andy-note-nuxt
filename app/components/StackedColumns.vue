@@ -1,8 +1,6 @@
 <script setup lang="ts">
 const containerRef = useTemplateRef<HTMLDivElement>('container')
-const { fullStack, activeIndex, stack, isMobile, scrollToColumn } = useStack()
-const route = useRoute()
-const router = useRouter()
+const { fullStack, activeIndex, scrollToColumn } = useStack()
 
 let observer: IntersectionObserver | null = null
 const ratios = new Map<number, number>()
@@ -50,14 +48,6 @@ function observeAllColumns() {
   }
 }
 
-function maybeRedirectMobile() {
-  if (!isMobile.value) return
-  if (stack.value.length === 0) return
-  const last = stack.value[stack.value.length - 1]
-  if (!last) return
-  router.replace({ path: last })
-}
-
 onMounted(() => {
   if (!containerRef.value) return
   observer = new IntersectionObserver(
@@ -74,15 +64,14 @@ onMounted(() => {
     },
   )
   observeAllColumns()
-  maybeRedirectMobile()
 
-  if (!isMobile.value && fullStack.value.length > 1) {
+  // Landing anywhere below the root (an article URL, a `?stack=` deep link)
+  // reveals the deepest column — its right edge on desktop, its top edge on
+  // mobile (scrollToColumn branches on axis). The root index column always
+  // sits at index 0, so every non-root landing has at least two columns.
+  if (fullStack.value.length > 1) {
     scrollToColumn(fullStack.value.length - 1)
   }
-})
-
-watch(isMobile, (now, prev) => {
-  if (now && !prev) maybeRedirectMobile()
 })
 
 onBeforeUnmount(() => {
@@ -101,9 +90,17 @@ watch(
 </script>
 
 <template>
+  <!--
+    One sticky-peek stack, two axes. Mobile (<md): a vertical y-scroller —
+    full-width, viewport-height columns that peek at the TOP. md+ : the
+    horizontal x-scroller with columns peeking at the LEFT. Same .stacked-column
+    sticky mechanism either way (see its scoped styles); only the axis flips.
+    The breakpoint mirrors useStack's `(max-width: 767px)` matchMedia exactly
+    (Tailwind md = 768px).
+  -->
   <div
     ref="container"
-    class="flex overflow-x-auto overflow-y-hidden h-full w-full"
+    class="flex flex-col overflow-y-auto overflow-x-hidden md:flex-row md:overflow-x-auto md:overflow-y-hidden h-full w-full"
     data-stacked-columns
   >
     <!--

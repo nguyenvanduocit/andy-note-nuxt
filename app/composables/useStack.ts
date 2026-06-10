@@ -128,9 +128,32 @@ export function useStack() {
 
     activeIndex.value = index
 
-    const rootStyles = getComputedStyle(document.documentElement)
-    const colWidth = parseInt(rootStyles.getPropertyValue('--column-width'), 10) || 640
-    const stackPeek = parseInt(rootStyles.getPropertyValue('--stack-peek'), 10) || 48
+    const stackPeek =
+      parseInt(getComputedStyle(document.documentElement).getPropertyValue('--stack-peek'), 10) || 48
+
+    // Mobile: same sticky-peek geometry, rotated to the vertical axis. Each
+    // column is a full-width, viewport-height panel sticky at top = idx*peek
+    // (see the .stacked-column mobile rules), so the formula mirrors the
+    // horizontal one with the column's height = the container's client height:
+    //   col K viewport-y = K * stack-peek
+    //   K * colHeight − scrollTop = K * stack-peek  ⇒  scrollTop = K * (colHeight − peek)
+    // For the last column this exceeds max scroll and the browser clamps,
+    // leaving it bottom-aligned below the accumulated peek strips. The
+    // expectedFullLength clamp guards the same mid-leave scrollHeight shrink the
+    // horizontal path does, just on the Y axis.
+    if (isMobile.value) {
+      const colHeight = container.clientHeight
+      let targetScrollTop = index * (colHeight - stackPeek)
+      if (expectedFullLength !== undefined) {
+        const postFadeMax = expectedFullLength * colHeight - container.clientHeight
+        if (postFadeMax < targetScrollTop) targetScrollTop = Math.max(0, postFadeMax)
+      }
+      container.scrollTo({ top: targetScrollTop, behavior: 'smooth' })
+      return
+    }
+
+    const colWidth =
+      parseInt(getComputedStyle(document.documentElement).getPropertyValue('--column-width'), 10) || 640
     let targetScrollLeft = index * (colWidth - stackPeek)
 
     if (expectedFullLength !== undefined) {
@@ -247,7 +270,6 @@ export function useStack() {
    */
   function handleStackClick(event: MouseEvent, fromIndex: number): void {
     if (!import.meta.client) return
-    if (isMobile.value) return // mobile: let NuxtLink handle navigation natively
 
     const anchor = findAnchorAncestor(event.target)
     if (!anchor) return
