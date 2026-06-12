@@ -339,6 +339,28 @@
     display: block;
   }
 
+  /* Numbered pager under the LATEST list — arrow steppers flanking one
+     square button per page, all sharing a fixed min-width so arrows and
+     two-digit numbers read as uniform blocks. The current page carries
+     `aria-current="page"` and renders as a solid accent block; arrows pinned
+     at a bound carry `aria-disabled` (never native `disabled`, which would
+     drop keyboard focus to <body>) and render faint + inert. The `:not()`
+     guards keep the hover restyle off both, so the active label never lands
+     coral-on-coral. Keyboard focus inherits the global `:focus-visible`
+     ring, keeping it distinct from hover. */
+  .pager-btn {
+    @apply tabular-nums text-[10px] font-bold font-mono uppercase tracking-widest min-w-[1.75rem] px-2 py-1 border border-terminal-border bg-transparent text-terminal-text-secondary text-center cursor-pointer transition-colors;
+  }
+  .pager-btn:not([aria-current='page']):not([aria-disabled='true']):hover {
+    @apply border-primary text-primary;
+  }
+  .pager-btn[aria-current='page'] {
+    @apply border-primary bg-primary text-terminal-bg cursor-default;
+  }
+  .pager-btn[aria-disabled='true'] {
+    @apply text-terminal-text-faint cursor-default;
+  }
+
   /* Meta row (author · date · tags) — separated by middle dot. */
   .meta {
     @apply flex flex-wrap gap-x-4 gap-y-1 text-xs text-terminal-text-muted font-mono uppercase tracking-wider;

@@ -121,17 +121,6 @@ function nodeRecency(node: ContentNode | undefined): number {
   return Number.isFinite(ts) ? ts : 0
 }
 
-// Creation timestamp only — distinct from `nodeRecency` which folds in `updated`.
-// The LATEST list ranks strictly by `created` (a recently *edited* old note is not
-// "new"). Returns 0 when `created` is missing/unparseable so those nodes can be
-// dropped — a node with no creation date has no claim to being among the newest.
-function createdTime(node: ContentNode | undefined): number {
-  const created = node?.created as string | undefined
-  if (!created) return 0
-  const ts = Date.parse(created)
-  return Number.isFinite(ts) ? ts : 0
-}
-
 const hierarchy = computed(() => {
   const nodes = (allChildren.value ?? []) as ContentNode[]
   const prefix = path.value === '/' ? '/' : `${path.value}/`
@@ -213,16 +202,18 @@ const hierarchy = computed(() => {
   }
 })
 
-// LATEST: the 5 most recently *created* leaf articles anywhere in the current
-// column's subtree (including nested sub-folders), newest first. Excludes:
+// LATEST: every leaf article anywhere in the current column's subtree
+// (including nested sub-folders), freshest first — ranked by `nodeRecency`
+// (`updated` falling back to `created`). Excludes:
 //  - folder/section index pages (only actual articles are "new content")
 //  - articles already listed in this column's ARTICLES section (dedup — the
 //    direct rootFiles are visible right below, so re-listing them adds noise;
-//    this makes LATEST surface the newest *nested* articles instead)
-//  - nodes with no parseable `created` (can't rank them by recency)
+//    this makes LATEST surface the freshest *nested* articles instead)
+//  - nodes with recency 0 (no parseable date — they can't be ranked)
 // Result: at a flat leaf folder every article is a rootFile → all deduped → list
-// empty → section auto-hides. At /mechanics or / it surfaces what's new deep in
-// the tree without the reader having to drill each sub-folder.
+// empty → section auto-hides. At /guides or / it surfaces what's fresh deep in
+// the tree without the reader having to drill each sub-folder. Returns the FULL
+// sorted list — the template pages it (see LATEST_PAGE_SIZE below).
 const latest = computed<ContentNode[]>(() => {
   const nodes = (allChildren.value ?? []) as ContentNode[]
   const prefix = path.value === '/' ? '/' : `${path.value}/`
@@ -246,11 +237,34 @@ const latest = computed<ContentNode[]>(() => {
   return inSubtree
     .filter(node => !folderPaths.has(node.path))
     .filter(node => !rootFilePaths.has(node.path))
-    .filter(node => createdTime(node) > 0)
-    .sort((a, b) => createdTime(b) - createdTime(a))
-    .slice(0, 5)
+    .filter(node => nodeRecency(node) > 0)
+    .sort((a, b) => nodeRecency(b) - nodeRecency(a))
 })
 
+// LATEST pagination — pure client-side ref state, never serialized into the
+// route. On this SSG stacked-column site the URL belongs to useStack's
+// `?stack=` contract; a page param would dirty canonical article URLs and
+// multiply prerender variants. State resets per column naturally
+// (StackedColumn remounts ContentView on path change). The page is always
+// read through the clamp so a shrinking list can never strand the view past
+// the final page.
+const LATEST_PAGE_SIZE = 10
+const latestPage = ref(1)
+const latestPageCount = computed(() => Math.max(1, Math.ceil(latest.value.length / LATEST_PAGE_SIZE)))
+const latestPageClamped = computed(() => Math.min(latestPage.value, latestPageCount.value))
+const pagedLatest = computed(() => {
+  const start = (latestPageClamped.value - 1) * LATEST_PAGE_SIZE
+  return latest.value.slice(start, start + LATEST_PAGE_SIZE)
+})
+// Guarded stepper for the pager's arrow buttons. Arrows mark bounds with
+// `aria-disabled` (not native `disabled`) so the just-activated arrow stays
+// focusable at a bound — native `disabled` would drop keyboard focus to
+// <body>. The guard makes activation at a bound a no-op.
+function flipLatestPage(delta: -1 | 1) {
+  const next = latestPageClamped.value + delta
+  if (next < 1 || next > latestPageCount.value) return
+  latestPage.value = next
+}
 const isList = computed(() => {
   return hierarchy.value.sections.length > 0 || hierarchy.value.rootFiles.length > 0
 })
@@ -423,7 +437,8 @@ const sectionIndex = computed(() => {
 //      schema — see https://content.nuxt.com/docs/integrations/llms), prefer
 //      it: it's a byte-faithful copy of the original `.md` source.
 //   2. Otherwise compose: `# Title` + description + stringified body
-//      (minimark AST → markdown) + listing blocks (Latest / Folders / Articles).
+//      (minimark AST → markdown) + listing blocks (Folders / Latest / Articles,
+//      mirroring the rendered order; Latest spans every pager page).
 //      Stringify is lossy at the edges (custom MDC components may not round-trip
 //      perfectly), but matches the rendered content closely enough for LLM
 //      ingestion and clipboard sharing.
@@ -470,18 +485,18 @@ async function buildMarkdown(): Promise<string> {
     }
   }
 
+  if (hierarchy.value.sections.length) {
+    lines.push('## Folders', '')
+    for (const section of hierarchy.value.sections) {
+      lines.push(`- [${section.title}](${section.path}) — ${section.count}`)
+    }
+    lines.push('')
+  }
   if (latest.value.length) {
     lines.push('## Latest', '')
     for (const file of latest.value) {
       const title = file.title || slugToTitle(file.path.split('/').pop() || '')
       lines.push(`- [${title}](${file.path})`)
-    }
-    lines.push('')
-  }
-  if (hierarchy.value.sections.length) {
-    lines.push('## Folders', '')
-    for (const section of hierarchy.value.sections) {
-      lines.push(`- [${section.title}](${section.path}) — ${section.count}`)
     }
     lines.push('')
   }
@@ -756,51 +771,6 @@ onBeforeUnmount(() => {
           <ContentRenderer :value="renderedPage" />
         </div>
 
-        <!-- Latest — newest-created articles across the subtree, deduped against
-             the column's own Articles list. Sits above Folders as a "what's new"
-             entry point. Auto-hides when empty (e.g. flat leaf folders). -->
-        <section v-if="latest.length > 0" aria-label="Latest">
-          <h3 class="section-heading mx-5">
-            <!-- Clock — connotes recency, the section's defining axis. -->
-            <svg
-              class="section-heading__icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="square"
-              stroke-linejoin="miter"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 7 L12 12 L16 14" />
-            </svg>
-            <span>Latest</span>
-          </h3>
-          <ul class="flex flex-col py-2">
-            <li
-              v-for="(file, index) in latest"
-              :key="file.path"
-              :class="['terminal-item min-w-0', isDrilled(file.path) && 'terminal-item--active']"
-            >
-              <NuxtLink
-                :to="file.path"
-                class="flex items-baseline min-w-0 w-full"
-              >
-                <span class="title-text font-bold whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-base">
-                  {{ file.title || slugToTitle(file.path.split('/').pop() || '') }}
-                </span>
-                <span class="dotted-leader flex-shrink" />
-                <!-- Rank 01 = newest. Distinct from Articles' count-down numbering
-                     because this list is explicitly time-ordered. -->
-                <span class="tabular-nums font-bold font-mono text-[10px] flex-shrink-0 text-terminal-text-faint mr-4">
-                  {{ String(index + 1).padStart(2, '0') }}
-                </span>
-              </NuxtLink>
-            </li>
-          </ul>
-        </section>
-
         <!-- Sections sub-grouping (folders) -->
         <section v-if="hierarchy.sections.length > 0" aria-label="Sections">
           <h3 class="section-heading mx-5">
@@ -822,7 +792,7 @@ onBeforeUnmount(() => {
           </h3>
           <ul class="flex flex-col py-2">
             <li
-              v-for="(section, index) in hierarchy.sections"
+              v-for="section in hierarchy.sections"
               :key="section.path"
               :class="['terminal-item min-w-0', isDrilled(section.path) && 'terminal-item--active']"
             >
@@ -840,6 +810,96 @@ onBeforeUnmount(() => {
               </NuxtLink>
             </li>
           </ul>
+        </section>
+
+        <!-- Latest — freshest articles across the subtree (`updated` falling
+             back to `created`), deduped against the column's own Articles list.
+             Sits between Folders and Articles as the subtree's "what's fresh"
+             digest, paged LATEST_PAGE_SIZE at a time. Auto-hides when empty
+             (e.g. flat leaf folders). -->
+        <section v-if="latest.length > 0" aria-label="Latest">
+          <h3 class="section-heading mx-5">
+            <!-- Clock — connotes recency, the section's defining axis. -->
+            <svg
+              class="section-heading__icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="square"
+              stroke-linejoin="miter"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7 L12 12 L16 14" />
+            </svg>
+            <span>Latest</span>
+          </h3>
+          <ul class="flex flex-col py-2">
+            <li
+              v-for="(file, index) in pagedLatest"
+              :key="file.path"
+              :class="['terminal-item min-w-0', isDrilled(file.path) && 'terminal-item--active']"
+            >
+              <NuxtLink
+                :to="file.path"
+                class="flex items-baseline min-w-0 w-full"
+              >
+                <span class="title-text font-bold whitespace-nowrap py-2 px-3 ml-2 transition-all overflow-hidden text-ellipsis flex-shrink min-w-0 text-base">
+                  {{ file.title || slugToTitle(file.path.split('/').pop() || '') }}
+                </span>
+                <span class="dotted-leader flex-shrink" />
+                <!-- Rank 01 = freshest; numbering continues across pages.
+                     Distinct from Articles' count-down numbering because this
+                     list is explicitly time-ordered. -->
+                <span class="tabular-nums font-bold font-mono text-[10px] flex-shrink-0 text-terminal-text-faint mr-4">
+                  {{ String((latestPageClamped - 1) * LATEST_PAGE_SIZE + index + 1).padStart(2, '0') }}
+                </span>
+              </NuxtLink>
+            </li>
+          </ul>
+          <!-- Pager — arrow steppers flanking one numbered button per page,
+               writing the client-side page ref only; the route/query and the
+               scroll position stay untouched. The dashed top rule anchors the
+               row as the list's footer. The current page is marked with
+               aria-current="page" (CSS keys its solid-accent state off that
+               attribute), so the active button stays focusable and re-clicking
+               it is a no-op. -->
+          <nav
+            v-if="latestPageCount > 1"
+            aria-label="Latest pages"
+            class="flex flex-wrap items-center justify-center gap-2 mx-5 mt-2 mb-3 pt-3 border-t-2 border-dashed border-terminal-border"
+          >
+            <button
+              type="button"
+              class="pager-btn"
+              aria-label="Previous page"
+              :aria-disabled="latestPageClamped <= 1"
+              @click="flipLatestPage(-1)"
+            >
+              ←
+            </button>
+            <button
+              v-for="n in latestPageCount"
+              :key="n"
+              type="button"
+              class="pager-btn"
+              :aria-label="`Page ${n}`"
+              :aria-current="n === latestPageClamped ? 'page' : undefined"
+              @click="latestPage = n"
+            >
+              {{ String(n).padStart(2, '0') }}
+            </button>
+            <button
+              type="button"
+              class="pager-btn"
+              aria-label="Next page"
+              :aria-disabled="latestPageClamped >= latestPageCount"
+              @click="flipLatestPage(1)"
+            >
+              →
+            </button>
+          </nav>
         </section>
 
         <!-- Root file listing (flat articles within current section) -->
