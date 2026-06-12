@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.10.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.9.0...v0.10.0) (2026-06-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* the @nuxtjs/algolia module is removed from the layer. Built-in content search replaces it; a consumer that calls Algolia composables must wire the module in its own nuxt.config.ts.
+
+### Features
+
+* ship built-in site search in the home column header ([2f45adb](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/2f45adbe465cddabe9effcb3236cf62d8eba298d))
+
 ## [0.9.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.8.0...v0.9.0) (2026-06-12)
 
 
