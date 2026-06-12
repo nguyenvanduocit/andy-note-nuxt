@@ -28,9 +28,13 @@ const tagSlug = computed(() => props.path.slice(TAG_PREFIX.length))
  */
 function onClick(event: MouseEvent) {
   handleStackClick(event, props.index)
-  if (!event.defaultPrevented) {
-    scrollToColumn(props.index)
-  }
+  if (event.defaultPrevented) return
+  // Buttons (copy split-button, the Latest pager) are self-contained controls,
+  // not focus-this-column gestures: refocusing would scroll-jump the reader
+  // away mid-interaction — worst on mobile, where focus scrolls the column's
+  // top back to the container top.
+  if ((event.target as Element | null)?.closest('button')) return
+  scrollToColumn(props.index)
 }
 </script>
 
