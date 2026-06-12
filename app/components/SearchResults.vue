@@ -7,27 +7,10 @@ const { query, status, results } = useSiteSearch()
 </script>
 
 <template>
+  <!-- No section heading: the field in the header already announces search
+       mode, so the rows start immediately — anything between them and the
+       input is noise. -->
   <section aria-label="Search results">
-    <h3 class="section-heading mx-5">
-      <svg
-        class="section-heading__icon"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="square"
-        stroke-linejoin="miter"
-        aria-hidden="true"
-      >
-        <circle cx="10" cy="10" r="6" />
-        <path d="M14.5 14.5 L21 21" />
-      </svg>
-      <span>Results</span>
-      <span class="ml-auto tabular-nums font-mono text-[10px] text-terminal-text-faint">
-        {{ String(results.length).padStart(2, '0') }}
-      </span>
-    </h3>
-
     <p v-if="status === 'loading'" class="search-box__status mx-5">Loading index…</p>
     <p v-else-if="status === 'error'" class="search-box__status mx-5">Search index failed to load.</p>
     <ul v-else-if="results.length" class="flex flex-col py-2">
