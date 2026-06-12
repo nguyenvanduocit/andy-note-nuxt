@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.7.0...v0.8.0) (2026-06-12)
+
+
+### Features
+
+* list folders first and paginate the Latest list by update recency ([2db1a2c](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/2db1a2ce15028ddce7c036519cca395dcf3c897c))
+
+
+### Bug Fixes
+
+* keep clicks on buttons from scroll-jumping the column ([140660d](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/140660de4cc26696f449468764283877cde310c5))
+
 ## [0.7.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.6.5...v0.7.0) (2026-06-10)
 
 
