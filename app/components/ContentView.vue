@@ -248,6 +248,18 @@ const isList = computed(() => {
   return hierarchy.value.sections.length > 0 || hierarchy.value.articles.length > 0
 })
 
+// Site search lives in the permanent home column only (path '/'): it is the
+// one column present on every page, so a single search surface covers the
+// whole stack without repeating an input per column. A magnifier trigger in
+// the header opens search mode (`searchOpen`), which swaps the header row
+// for the SearchBox field; while a query is active the column shows
+// SearchResults instead of its body + Folders + Articles listing. The path
+// gate matters twice: it keeps the trigger off other columns AND keeps an
+// active query from blanking their listings (useSiteSearch state is
+// app-wide).
+const { searching, open: searchOpen, openSearch } = useSiteSearch()
+const searchActive = computed(() => path.value === '/' && searching.value)
+
 function toKebab(str: string) {
   // `String(...)` coerce: an unquoted numeric YAML tag (`- 0.5`, `- 8`) parses
   // as a number despite the `z.array(z.string())` schema, and a bare `.trim()`
@@ -632,9 +644,13 @@ onBeforeUnmount(() => {
 
   <div v-else class="column-pane flex flex-col h-full">
     <!-- Column header — sits outside the scroll container so the scrollbar
-         never overlaps it. flex-none keeps it at fixed height. -->
+         never overlaps it. flex-none keeps it at fixed height. On the home
+         column, search mode replaces this row with the SearchBox field —
+         the modern header-morph search pattern; the magnifier trigger next
+         to the copy split-button flips it. -->
     <div class="section-card-header flex-none">
-      <div class="flex items-center justify-between gap-3">
+      <SearchBox v-if="path === '/' && searchOpen" />
+      <div v-else class="flex items-center justify-between gap-3">
         <h2 class="text-sm font-bold uppercase tracking-tight flex items-center gap-2 truncate">
           <!-- Optical nudge: Space Grotesk's solidus descends ~2.8px below the
                baseline while the adjacent caps/digits sit on it, so flex
@@ -646,6 +662,33 @@ onBeforeUnmount(() => {
           </span>
           <span class="truncate">{{ displayTitle }}</span>
         </h2>
+        <!-- Search trigger — home column only, sits before the copy
+             split-button as a one-segment group so the two read as
+             siblings. Clicking swaps this header row for the SearchBox
+             field. -->
+        <div v-if="path === '/'" class="copy-actions ml-auto">
+          <button
+            type="button"
+            class="copy-btn copy-btn--menu"
+            aria-label="Search this site"
+            title="Search"
+            @click.stop="openSearch"
+          >
+            <svg
+              class="w-3.5 h-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="square"
+              stroke-linejoin="miter"
+              aria-hidden="true"
+            >
+              <circle cx="10" cy="10" r="6" />
+              <path d="M14.5 14.5 L21 21" />
+            </svg>
+          </button>
+        </div>
         <!-- Split-button: primary half copies markdown; the chevron half is
              the Floating-UI anchor for the AI-deep-link menu. Visually fused
              (negative margin merges the shared border) so it reads as one
@@ -738,6 +781,9 @@ onBeforeUnmount(() => {
     <div class="column-pane__scroll flex-1 overflow-y-auto min-h-0">
       <!-- LIST VIEW: any path that has children renders as a section listing. -->
       <template v-if="isList">
+        <SearchResults v-if="searchActive" />
+
+        <template v-if="!searchActive">
         <div v-if="hasRenderedBody" class="content px-5 pt-6">
           <ContentRenderer :value="renderedPage" />
         </div>
@@ -874,6 +920,7 @@ onBeforeUnmount(() => {
             </button>
           </nav>
         </section>
+        </template>
       </template>
 
       <!-- ARTICLE VIEW: only reached when a page exists with content body and no children. -->

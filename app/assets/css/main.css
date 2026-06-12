@@ -361,6 +361,43 @@
     @apply text-terminal-text-faint cursor-default;
   }
 
+  /* Site search (home column only) — a terminal prompt that mounts in
+     place of the header row while search mode is open; the header bar
+     itself (`.section-card-header`) keeps providing the chrome, so the
+     swap is content-only and the bar height never jumps. Results reuse
+     the terminal-item row treatment; <mark> highlights matched terms in
+     accent text instead of a highlighter box, which is foreign to the
+     palette. */
+  .search-box__field {
+    @apply flex items-center gap-2 w-full;
+  }
+  .search-box__icon {
+    @apply text-primary shrink-0;
+    width: 14px;
+    height: 14px;
+  }
+  /* py-0: the close button's 24px group fixes the row height, so the input
+     adds none of its own — the header bar must not grow when search mode
+     swaps in. */
+  .search-box__input {
+    @apply w-full bg-transparent py-0 font-mono text-sm text-terminal-text placeholder:text-terminal-text-faint focus:outline-none;
+  }
+  /* WebKit draws a rounded native cancel button + magnifier inside
+     type=search — strip them, the field carries its own affordances. */
+  .search-box__input::-webkit-search-decoration,
+  .search-box__input::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+  }
+  .search-box__status {
+    @apply py-3 font-mono text-xs text-terminal-text-muted;
+  }
+  .search-hit__snippet {
+    @apply text-xs text-terminal-text-muted leading-relaxed;
+  }
+  .search-hit__snippet mark {
+    @apply bg-transparent text-primary font-bold;
+  }
+
   /* Meta row (author · date · tags) — separated by middle dot. */
   .meta {
     @apply flex flex-wrap gap-x-4 gap-y-1 text-xs text-terminal-text-muted font-mono uppercase tracking-wider;
