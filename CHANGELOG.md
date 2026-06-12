@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.1](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.10.0...v0.10.1) (2026-06-12)
+
+
+### Bug Fixes
+
+* drop the Results heading from search results ([04f22f4](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/04f22f48da837462a58f5aeef2c8e47762edefa4))
+
 ## [0.10.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.9.0...v0.10.0) (2026-06-12)
 
 
