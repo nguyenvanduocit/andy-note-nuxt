@@ -227,7 +227,7 @@ const hierarchy = computed(() => {
 // (StackedColumn remounts ContentView on path change). The page is always
 // read through the clamp so a shrinking list can never strand the view past
 // the final page.
-const ARTICLE_PAGE_SIZE = 10
+const ARTICLE_PAGE_SIZE = 20
 const articlePage = ref(1)
 const articlePageCount = computed(() => Math.max(1, Math.ceil(hierarchy.value.articles.length / ARTICLE_PAGE_SIZE)))
 const articlePageClamped = computed(() => Math.min(articlePage.value, articlePageCount.value))
