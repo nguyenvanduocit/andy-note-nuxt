@@ -339,7 +339,7 @@
     display: block;
   }
 
-  /* Numbered pager under the LATEST list — arrow steppers flanking one
+  /* Numbered pager under the ARTICLES list — arrow steppers flanking one
      square button per page, all sharing a fixed min-width so arrows and
      two-digit numbers read as uniform blocks. The current page carries
      `aria-current="page"` and renders as a solid accent block; arrows pinned

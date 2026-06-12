@@ -20,7 +20,7 @@ Trang này là cheatsheet — workflow viết note nằm ở
 | `title` | string | Khuyên dùng | Header column, listing item, `<title>` HTML |
 | `description` | string | Khuyên dùng | `<meta name="description">`, OG, section listing |
 | `tags` | string[] | Optional | Render thành tag pills dưới H1 — mỗi tag link tới `/tags/<tag>`, vd [/tags/reference](/tags/reference) |
-| `created` | YYYY-MM-DD | Optional | Sort "Latest" section, badge recency |
+| `created` | YYYY-MM-DD | Optional | Sort "Articles" listing, badge recency |
 | `updated` | YYYY-MM-DD | Optional | Sort listing, badge recency (ưu tiên > `created`) |
 | `document_type` | string | Optional | Phân loại (default: undefined). Special value `"convention"` ẩn khỏi listing. |
 

@@ -41,7 +41,7 @@ updated: 2026-05-20
   tag dẫn đến `/tags/<tag>` — xem [/tags/reference](/tags/reference) để
   thấy một tag index hoàn chỉnh trông như thế nào.
 - **`created` / `updated`** — ISO date string (`YYYY-MM-DD` đủ). Theme
-  dùng để sort section "Latest" và để hiện badge recency.
+  dùng để sort section "Articles" và để hiện badge recency.
 
 Xem [Reference / Frontmatter](/reference/frontmatter) để biết toàn bộ
 field schema và những field optional khác.
