@@ -951,6 +951,11 @@ onBeforeUnmount(() => {
         <div class="content">
           <ContentRenderer :value="renderedPage" />
         </div>
+
+        <!-- Reader comments (opt-in via site.comments.enabled). Renders nothing
+             when disabled; scopes itself to this column's `.content` so the same
+             article in two stacked columns annotates independently. -->
+        <CommentLayer :path="path" />
       </article>
     </div>
   </div>

@@ -32,6 +32,35 @@ SEO is **layer wiring** — consumers inherit a complete stack and never re-impl
 - **og-image generation is off** (`ogImage.enabled: false`) — it needs a renderer + fonts + a per-deploy PNG check. A static og:image (consumer `app.head`, or a page frontmatter `image` / `ogImage` field read defensively by `ContentView`) works regardless; consumers opt in to generated cards.
 - The layer ships **no brand image and no `site.url`** — same contract as everything else: layer = machinery, consumer = domain.
 
+## Reader comments (opt-in, layer-provided)
+
+Code-review-style commenting: a reader selects any prose and comments on that span, or leaves a whole-page note; the author resolves and it disappears for everyone. **OFF by default** — `runtimeConfig.public.site.comments.enabled` gates the entire UI, so consumers who don't wire a backend ship nothing.
+
+The split is the usual one — **layer = machinery, consumer = deployment**:
+
+- **Layer owns**: `useComments.ts` (data layer — config read, author token, fetch/post/resolve against `comments.endpoint`), `CommentLayer.vue` (selection → floating composer, injected `<mark>` highlights, thread popover, in-flow comments panel), mounted in `ContentView.vue`'s article view, and `server-functions/comments.ts` (the **reference Cloudflare Pages Function**). All client UI is gated behind `mounted` + `enabled`, so SSR/prerender emit nothing and comments are fetched at runtime only — never baked into static HTML.
+- **Consumer owns**: the KV namespace, the resolve secret, and the `functions/` file that exposes the endpoint — same class of data as `site.url`. A static `nuxt generate` site has **no Nitro server**, so the backend is a CF Pages Function (compiled from the consumer's repo-root `functions/`, served alongside the static assets), not a `server/api` route.
+
+Consumer wiring (per site):
+
+```ts
+// 1. <consumer>/functions/api/comments.ts  — re-export the layer's handlers
+export { onRequestGet, onRequestPost, onRequestDelete } from 'andy-note-nuxt/server-functions/comments'
+```
+
+```ts
+// 2. <consumer>/nuxt.config.ts — opt in (deep-merges over the layer default)
+runtimeConfig: { public: { site: { comments: { enabled: true } } } }
+```
+
+3. **CF Pages → Settings → Functions → KV bindings**: `COMMENTS` → a KV namespace you create.
+4. **CF Pages → Settings → Environment variables** (encrypt): `COMMENTS_RESOLVE_SECRET` → a long random string (authorizes resolve).
+5. **Author mode**: visit any article once with `?ec_author=<COMMENTS_RESOLVE_SECRET>` — the secret is stored in that browser's `localStorage` and stripped from the URL; resolve actions then appear and send it as a bearer token on `DELETE`.
+
+**Abuse**: POST is intentionally open (readers need no account). The function bounds it with a per-IP rate limit (fails closed on a KV error) and a per-article cap (`MAX_PER_PATH`, 200 — open comments are author-resolved, never auto-expired, so it's a hard cap not a TTL). For stronger protection, gate `/api/*` at the Cloudflare dashboard with **WAF rules or a Turnstile challenge** — a deployment concern, so the layer ships no challenge code.
+
+KV layout is one entry per comment (`c:<path>:<id>`) — listing open comments is a prefix scan (page values fetched in parallel), resolving is a delete, so concurrent posts never clobber a shared blob. Local testing needs `wrangler pages dev` (Nuxt dev can't run CF Functions); without a backend wired, `fetchComments` fails closed and the panel shows zero comments.
+
 ## Brutalist-terminal aesthetic (brand surface)
 
 Do not drift from these without explicit instruction:

@@ -101,6 +101,17 @@ export default defineNuxtConfig({
         author: 'andy-note-nuxt',
         themeColor: '#ff7b6b',
         logo: '/logo.svg',
+        // Reader comments (code-review-style inline + whole-page). OFF by
+        // default — this is layer machinery, not a domain feature. A consumer
+        // opts in per site and wires the Cloudflare Pages Function + KV binding
+        // that backs it (see server-functions/comments.ts and the "Reader
+        // comments" section in CLAUDE.md). `endpoint` is the same-origin API
+        // the client talks to; the binding/secret are the consumer's, exactly
+        // like `site.url`.
+        comments: {
+          enabled: false,
+          endpoint: '/api/comments',
+        },
       },
     },
   },

@@ -18,6 +18,13 @@ declare module 'nuxt/schema' {
       author: string
       themeColor: string
       logo: string
+      // Reader-comments wiring (layer-provided, opt-in). `enabled` gates the
+      // CommentLayer UI; `endpoint` is the same-origin API it calls. The KV
+      // binding + resolve secret backing it are the consumer's deployment data.
+      comments?: {
+        enabled?: boolean
+        endpoint?: string
+      }
       // Free-form extras child projects can attach without re-declaring the interface.
       [key: string]: unknown
     }
