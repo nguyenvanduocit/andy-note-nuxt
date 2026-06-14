@@ -133,6 +133,12 @@ const hierarchy = computed(() => {
       return { node, relative, segments }
     })
     .filter(entry => entry.segments.length > 0)
+    // Hidden by the dotfile convention: any segment with a leading dot
+    // (`.drafts`, `.obsidian`, a stray `.DS_Store`) is excluded, so a
+    // dot-prefixed folder never appears as a navigable Folder, its leaves
+    // never appear in Articles, and anything routed through it stays hidden
+    // (a deep descendant still carries the dot segment in its relative path).
+    .filter(entry => !entry.segments.some(segment => segment.startsWith('.')))
 
   const direct = descendants.filter(entry => entry.segments.length === 1)
   const directByPath = new Map(direct.map(entry => [entry.node.path, entry.node]))
