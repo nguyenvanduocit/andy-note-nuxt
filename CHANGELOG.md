@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.11.1...v0.12.0) (2026-06-14)
+
+
+### Features
+
+* add reader comments (inline + whole-page, code-review style) ([da79def](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/da79def97004e2c792f640af1ce43b2748550903))
+
 ## [0.11.1](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.11.0...v0.11.1) (2026-06-14)
 
 
