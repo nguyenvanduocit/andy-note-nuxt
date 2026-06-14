@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.11.0...v0.11.1) (2026-06-14)
+
+
+### Bug Fixes
+
+* ignore dot-prefixed folders in content listings ([d4e0938](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/d4e093884b2df86ab2a2c77a9ab98f26109741cb))
+
 ## [0.11.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.10.1...v0.11.0) (2026-06-12)
 
 
