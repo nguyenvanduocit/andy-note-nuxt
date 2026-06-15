@@ -34,7 +34,7 @@ SEO is **layer wiring** — consumers inherit a complete stack and never re-impl
 
 ## Reader comments (opt-in, layer-provided)
 
-Code-review-style commenting: a reader selects any prose and comments on that span, or leaves a whole-page note; the author resolves and it disappears for everyone. **OFF by default** — `runtimeConfig.public.site.comments.enabled` gates the entire UI, so consumers who don't wire a backend ship nothing.
+Code-review-style commenting: a reader selects any prose and comments on that span; the author resolves and it disappears for everyone. **OFF by default** — `runtimeConfig.public.site.comments.enabled` gates the entire UI, so consumers who don't wire a backend ship nothing.
 
 The split is the usual one — **layer = machinery, consumer = deployment**:
 

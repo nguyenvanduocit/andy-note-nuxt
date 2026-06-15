@@ -13,8 +13,7 @@ import { computed, ref, type Ref, type ComputedRef } from 'vue'
 // only knows a single endpoint that speaks GET (list open) / POST (create) /
 // DELETE (resolve). A consumer could repoint `endpoint` at any compatible API.
 
-/** A text-quote + position anchor for a selection-scoped comment.
- *  `null` anchor (on a Comment) means a whole-article comment. */
+/** A text-quote + position anchor for a selection-scoped comment. */
 export interface CommentAnchor {
   /** The exact selected text — primary re-anchoring key. */
   quote: string
@@ -33,8 +32,8 @@ export interface Comment {
   /** Content path this comment belongs to, e.g. `/builds/foo`. */
   path: string
   body: string
-  /** `null` for a whole-article comment. */
-  anchor: CommentAnchor | null
+  /** The selection this comment is anchored to. */
+  anchor: CommentAnchor
   /** Optional display name the reader typed; empty → "Anonymous". */
   author?: string
   /** Epoch ms. */
@@ -43,7 +42,7 @@ export interface Comment {
 
 export interface CommentDraft {
   body: string
-  anchor: CommentAnchor | null
+  anchor: CommentAnchor
   author?: string
 }
 

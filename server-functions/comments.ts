@@ -69,7 +69,7 @@ interface Comment {
   id: string
   path: string
   body: string
-  anchor: CommentAnchor | null
+  anchor: CommentAnchor
   author?: string
   createdAt: number
 }
@@ -178,7 +178,10 @@ export const onRequestGet: Handler = async ({ request, env }) => {
     for (const raw of raws) {
       if (!raw) continue
       try {
-        comments.push(JSON.parse(raw) as Comment)
+        const c = JSON.parse(raw) as Comment
+        // Every served comment anchors to a selection. Skip anything without a
+        // valid anchor so the client can render `anchor.quote` unconditionally.
+        if (c.anchor?.quote) comments.push(c)
       }
       catch {
         // skip a corrupt entry rather than failing the whole list
@@ -206,6 +209,10 @@ export const onRequestPost: Handler = async ({ request, env }) => {
   const body = clampStr(payload.body, MAX_BODY).trim()
   if (!body) return json({ error: 'Empty comment' }, 400)
 
+  // Every comment must anchor to a selected span of the article.
+  const anchor = sanitizeAnchor(payload.anchor)
+  if (!anchor) return json({ error: 'Comment must anchor to a selection' }, 400)
+
   const ip = clientIp(request)
 
   if (await overRateLimit(env, ip)) {
@@ -223,7 +230,7 @@ export const onRequestPost: Handler = async ({ request, env }) => {
     id: crypto.randomUUID(),
     path,
     body,
-    anchor: sanitizeAnchor(payload.anchor),
+    anchor,
     author: clampStr(payload.author, MAX_AUTHOR).trim() || undefined,
     createdAt: Date.now(),
   }

@@ -11,7 +11,6 @@
 // Code-review-style flow:
 //   • select text in the article → floating "Comment" button → composer popover
 //   • a stored comment paints a coral <mark>; clicking it opens its thread
-//   • "Add a note about this page" composes a whole-article comment (no anchor)
 //   • the author (holds the resolve secret) clicks Resolve → it disappears for all
 import { useFloating, offset, flip, shift, autoUpdate } from '@floating-ui/vue'
 import { toast } from 'vue-sonner'
@@ -179,8 +178,6 @@ const contentEl = ref<HTMLElement | null>(null)
 const rootEl = useTemplateRef<HTMLElement>('rootEl')
 
 const openCount = computed(() => comments.value.length)
-const anchored = computed(() => comments.value.filter(c => c.anchor))
-const whole = computed(() => comments.value.filter(c => !c.anchor))
 
 // Pending selection captured at mouseup (the click that opens the composer
 // would otherwise collapse the live selection before we can read it).
@@ -232,7 +229,6 @@ function repaint(): void {
   if (!root) return
   clearMarks(root)
   for (const c of comments.value) {
-    if (!c.anchor) continue
     const range = locate(root, c.anchor)
     if (range) paintRange(range, c.id)
   }
@@ -325,13 +321,6 @@ function openComposerFromSelection(): void {
   bubbleOpen.value = false
 }
 
-function openWholePageComposer(): void {
-  composeAnchor.value = null
-  draftBody.value = ''
-  popRef.value = rootEl.value
-  popMode.value = 'compose'
-}
-
 function openThread(id: string, anchorEl: Element): void {
   activeId.value = id
   popRef.value = anchorEl
@@ -347,12 +336,13 @@ function closePopover(): void {
 
 async function submitDraft(): Promise<void> {
   const body = draftBody.value.trim()
-  if (!body || submitting.value) return
+  const anchor = composeAnchor.value
+  if (!body || !anchor || submitting.value) return
   submitting.value = true
   try {
     const created = await postComment(props.path, {
       body,
-      anchor: composeAnchor.value,
+      anchor,
       author: draftAuthor.value.trim() || undefined,
     })
     if (created) {
@@ -466,15 +456,12 @@ onBeforeUnmount(() => {
 
 <template>
   <div v-if="enabled && mounted" ref="rootEl" class="ec-layer">
-    <!-- In-flow footer: open-comment roll + whole-article composer trigger.
-         Sits at the end of the article so it reads as the column's discussion. -->
+    <!-- In-flow footer: the column's open-comment roll. Sits at the end of the
+         article so it reads as the column's discussion. -->
     <section class="ec-panel" aria-label="Reader comments">
       <div class="ec-panel__head">
         <span class="ec-panel__title">Comments</span>
         <span class="ec-panel__count">{{ String(openCount).padStart(2, '0') }}</span>
-        <button type="button" class="ec-panel__add" @click="openWholePageComposer">
-          + Add a note about this page
-        </button>
       </div>
 
       <p v-if="openCount === 0" class="ec-panel__empty">
@@ -482,19 +469,9 @@ onBeforeUnmount(() => {
       </p>
 
       <ul v-else class="ec-roll">
-        <li v-for="c in whole" :key="c.id" class="ec-roll__item">
-          <div class="ec-roll__meta">
-            <span class="ec-roll__author">{{ c.author || 'Anonymous' }}</span>
-            <span class="ec-roll__time">· whole page · {{ timeAgo(c.createdAt) }}</span>
-          </div>
-          <p class="ec-roll__body">{{ c.body }}</p>
-          <button v-if="isAuthor" type="button" class="ec-resolve" @click="resolve(c.id)">
-            ✓ Resolve
-          </button>
-        </li>
-        <li v-for="c in anchored" :key="c.id" class="ec-roll__item">
+        <li v-for="c in comments" :key="c.id" class="ec-roll__item">
           <button type="button" class="ec-roll__quote" @click="flashMark(c.id)">
-            “{{ c.anchor?.quote }}”
+            “{{ c.anchor.quote }}”
           </button>
           <div class="ec-roll__meta">
             <span class="ec-roll__author">{{ c.author || 'Anonymous' }}</span>
@@ -532,9 +509,7 @@ onBeforeUnmount(() => {
         @click.stop
       >
         <template v-if="popMode === 'compose'">
-          <div class="ec-pop__head">
-            {{ composeAnchor ? 'Comment on selection' : 'Note about this page' }}
-          </div>
+          <div class="ec-pop__head">Comment on selection</div>
           <blockquote v-if="composeAnchor" class="ec-pop__quote">
             “{{ composeAnchor.quote }}”
           </blockquote>
@@ -566,7 +541,7 @@ onBeforeUnmount(() => {
         </template>
 
         <template v-else-if="popMode === 'thread' && activeComment">
-          <blockquote v-if="activeComment.anchor" class="ec-pop__quote">
+          <blockquote class="ec-pop__quote">
             “{{ activeComment.anchor.quote }}”
           </blockquote>
           <div class="ec-pop__meta">
@@ -615,55 +590,35 @@ mark.ec-mark--flash {
 /* Plain CSS with hardcoded theme tokens — same convention as
    LocalStorageChecklist.vue: independent of Tailwind purge state and the
    ContentRenderer `.content` prose overrides. */
+/* No box — the section flows in the article like any other h2 block. */
 .ec-panel {
-  border: 3px solid #474541;
-  background: #2e2f2c;
-  box-shadow: 4px 4px 0 0 #474541;
   margin: 2.5rem 0 0;
-  padding: 1rem;
   font-family: 'Space Grotesk', 'Space Grotesk Fallback', -apple-system, sans-serif;
   color: #d5cfc5;
 }
 
 .ec-panel__head {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 0.5rem;
   flex-wrap: wrap;
-  border-bottom: 1px solid #474541;
-  padding-bottom: 0.625rem;
+  margin-bottom: 1rem;
 }
 
+/* Reads as a prose h2: Space Grotesk, bold, text-2xl, tracking-tight, sentence case. */
 .ec-panel__title {
-  font-size: 0.8125rem;
+  font-family: 'Space Grotesk', 'Space Grotesk Fallback', sans-serif;
+  font-size: 1.5rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: -0.025em;
 }
 
 .ec-panel__count {
   font-family: 'SF Mono', Monaco, Consolas, monospace;
-  font-size: 0.625rem;
+  font-size: 0.875rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: #a8a298;
-  border: 1px solid #474541;
-  padding: 0.125rem 0.375rem;
-}
-
-.ec-panel__add {
-  margin-left: auto;
-  font-family: 'SF Mono', Monaco, Consolas, monospace;
-  font-size: 0.75rem;
-  color: #ff7b6b;
-  background: transparent;
-  border: 1px solid #474541;
-  padding: 0.3125rem 0.625rem;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-}
-.ec-panel__add:hover {
-  border-color: #ff7b6b;
+  color: #8a857c;
 }
 
 .ec-panel__empty {
