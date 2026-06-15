@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.14.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.13.1...v0.14.0) (2026-06-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* consumers using comments must wire Firebase instead of the Cloudflare Pages Function + KV. Remove functions/api/comments.ts and the COMMENTS / COMMENTS_RESOLVE_SECRET bindings; add nuxt-vuefire to modules with a vuefire.config, set site.comments.owners, and deploy the reference firestore.rules. See the "Reader comments" section in CLAUDE.md.
+
+### Features
+
+* move reader comments to Firebase (Google auth + Firestore) ([16fcf3d](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/16fcf3d51bc69672c6e591099b78935f3e79f75e))
+
 ## [0.13.1](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.13.0...v0.13.1) (2026-06-15)
 
 
