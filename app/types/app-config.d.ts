@@ -19,11 +19,13 @@ declare module 'nuxt/schema' {
       themeColor: string
       logo: string
       // Reader-comments wiring (layer-provided, opt-in). `enabled` gates the
-      // CommentLayer UI; `endpoint` is the same-origin API it calls. The KV
-      // binding + resolve secret backing it are the consumer's deployment data.
+      // CommentLayer UI; `owners` is the email allowlist the client uses to
+      // decide whether to show Resolve (Firestore rules enforce it server-side).
+      // The Firebase project + `vuefire.config` backing it are the consumer's
+      // deployment data, wired in their own nuxt.config.
       comments?: {
         enabled?: boolean
-        endpoint?: string
+        owners?: string[]
       }
       // Free-form extras child projects can attach without re-declaring the interface.
       [key: string]: unknown

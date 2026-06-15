@@ -1,0 +1,47 @@
+rules_version = '2';
+
+// Reference Firestore security rules for the andy-note-nuxt reader-comments
+// feature. A consumer deploys these to their own Firebase project (Firebase
+// console → Firestore → Rules, or `firebase deploy --only firestore:rules`).
+//
+// Model: comments are public to read; only signed-in users may post, and every
+// comment must anchor to a selected span, carry a bounded body, stamp the
+// caller's uid, and use the server commit time — so identity and shape can't be
+// forged. Resolving (delete) is restricted to the site owner(s).
+//
+// CONSUMER EDIT: replace the email(s) in `isOwner()` with your own. Mirror the
+// same list in `runtimeConfig.public.site.comments.owners` so the client shows
+// the Resolve button to the right account (the rule below is the authority).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in ['you@example.com'];
+    }
+
+    function isValidComment(d) {
+      return d.keys().hasOnly(['path', 'body', 'anchor', 'author', 'authorUid', 'createdAt'])
+        && d.path is string && d.path.size() > 0 && d.path.size() <= 512
+        && d.body is string && d.body.size() > 0 && d.body.size() <= 4000
+        && d.author is string && d.author.size() > 0 && d.author.size() <= 120
+        && d.authorUid is string && d.authorUid == request.auth.uid
+        && d.createdAt == request.time
+        && d.anchor is map
+        && d.anchor.keys().hasOnly(['quote', 'prefix', 'suffix', 'start', 'end'])
+        && d.anchor.quote is string && d.anchor.quote.size() > 0 && d.anchor.quote.size() <= 2000
+        && d.anchor.prefix is string && d.anchor.prefix.size() <= 200
+        && d.anchor.suffix is string && d.anchor.suffix.size() <= 200
+        && d.anchor.start is int && d.anchor.start >= 0
+        && d.anchor.end is int && d.anchor.end >= 0;
+    }
+
+    match /comments/{commentId} {
+      allow read: if true;
+      allow create: if request.auth != null && isValidComment(request.resource.data);
+      allow update: if false;
+      allow delete: if isOwner();
+    }
+  }
+}

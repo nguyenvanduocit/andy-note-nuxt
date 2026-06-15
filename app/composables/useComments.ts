@@ -1,17 +1,31 @@
-import { computed, ref, type Ref, type ComputedRef } from 'vue'
+import { computed, type ComputedRef, type Ref } from 'vue'
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  query,
+  serverTimestamp,
+  where,
+  type Timestamp,
+} from 'firebase/firestore'
+import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
+import { useCollection, useCurrentUser, useFirebaseAuth, useFirestore } from 'vuefire'
 
 // Reader comments — data layer (the "functional core").
 //
-// This composable owns the *data* concern only: reading the opt-in config,
-// holding the author-resolve token, and talking to the configured endpoint.
-// All DOM / selection / highlight work (the "imperative shell") lives in
-// CommentLayer.vue. Keeping the two apart means the API surface is trivially
-// reusable and the component stays purely about the browser.
+// Storage + identity are both on Firebase: Google sign-in (Firebase Auth) gates
+// posting, and comments live in a Firestore `comments` collection. The composable
+// owns only the *data* concern — auth state, the live query, and create/delete.
+// All DOM / selection / highlight work lives in CommentLayerClient.vue.
 //
-// Storage backend is a static-site-safe Cloudflare Pages Function + Workers KV
-// (see `server-functions/comments.ts`). The composable is backend-agnostic: it
-// only knows a single endpoint that speaks GET (list open) / POST (create) /
-// DELETE (resolve). A consumer could repoint `endpoint` at any compatible API.
+// VueFire (`nuxt-vuefire`, wired by the consumer) provides the Firebase app via a
+// Nuxt plugin; this composable consumes it through `useFirestore` / `useFirebaseAuth`
+// / `useCurrentUser`. It is therefore only ever called from a client-only,
+// `enabled`-gated component, so a consumer without VueFire (or with comments off)
+// never reaches these calls. Access control is enforced server-side by Firestore
+// security rules (see the reference `firestore.rules`); the client mirrors the
+// owner allowlist purely to decide whether to show the Resolve button.
 
 /** A text-quote + position anchor for a selection-scoped comment. */
 export interface CommentAnchor {
@@ -28,134 +42,88 @@ export interface CommentAnchor {
 }
 
 export interface Comment {
+  /** Firestore document id (attached by VueFire). */
   id: string
   /** Content path this comment belongs to, e.g. `/builds/foo`. */
   path: string
   body: string
   /** The selection this comment is anchored to. */
   anchor: CommentAnchor
-  /** Optional display name the reader typed; empty → "Anonymous". */
-  author?: string
-  /** Epoch ms. */
-  createdAt: number
-}
-
-export interface CommentDraft {
-  body: string
-  anchor: CommentAnchor
-  author?: string
+  /** Display name from the verified Google token. */
+  author: string
+  /** Firebase uid of the author — stamped + enforced by security rules. */
+  authorUid: string
+  /** Server commit time; `null` for the brief window before the write lands. */
+  createdAt: Timestamp | null
 }
 
 interface CommentsConfig {
   enabled: boolean
-  endpoint: string
+  owners: string[]
 }
 
-// Author token lives in localStorage so the site author can resolve comments
-// from their own browser without an auth provider. It is supplied once via
-// `?ec_author=<secret>` (captured + stripped on load) and sent as a bearer
-// token on DELETE. This is deliberately lightweight: the secret only authorizes
-// the destructive `resolve`, never reads, and is the author's own machine.
-const AUTHOR_TOKEN_KEY = 'andy-note:comment-author-token'
-const AUTHOR_QUERY_PARAM = 'ec_author'
-
-// Module-level singletons so every CommentLayer instance (one per column, and
-// the same article can mount in two columns) shares author state and never
-// re-reads localStorage redundantly.
-let _isAuthor: Ref<boolean> | null = null
-let _authorToken: string | null = null
-
-function readAuthorToken(): string | null {
-  if (_authorToken !== null) return _authorToken || null
-  if (!import.meta.client) return null
-  try {
-    _authorToken = localStorage.getItem(AUTHOR_TOKEN_KEY) || ''
-  }
-  catch {
-    _authorToken = ''
-  }
-  return _authorToken || null
+function toMillis(c: Comment): number {
+  // A freshly-created doc shows `createdAt: null` locally until the serverTimestamp
+  // resolves — treat it as "just now" so it sorts to the end, not the start.
+  return c.createdAt ? c.createdAt.toMillis() : Date.now()
 }
 
-export function useComments() {
+export function useComments(path: string) {
   const runtime = useRuntimeConfig()
   const raw = (runtime.public.site as { comments?: Partial<CommentsConfig> }).comments
-  const config: CommentsConfig = {
-    enabled: raw?.enabled === true,
-    endpoint: typeof raw?.endpoint === 'string' && raw.endpoint.length > 0 ? raw.endpoint : '/api/comments',
+  const owners = Array.isArray(raw?.owners) ? raw.owners.filter(o => typeof o === 'string') : []
+
+  const db = useFirestore()
+  const auth = useFirebaseAuth()
+  const user = useCurrentUser()
+
+  const isOwner: ComputedRef<boolean> = computed(() => {
+    const email = user.value?.email
+    return !!email && owners.includes(email)
+  })
+
+  // Live query for this article's open comments. VueFire keeps `source` reactive
+  // and re-subscribes if it changes; a single `where` needs no composite index,
+  // so we sort by time on the client instead of adding an `orderBy`.
+  const source = computed(() => query(collection(db, 'comments'), where('path', '==', path)))
+  const rows = useCollection<Comment>(source)
+  const comments: ComputedRef<Comment[]> = computed(() =>
+    [...rows.value].sort((a, b) => toMillis(a) - toMillis(b)),
+  )
+
+  async function signIn(): Promise<void> {
+    if (!auth) return
+    await signInWithPopup(auth, new GoogleAuthProvider())
   }
 
-  const enabled: ComputedRef<boolean> = computed(() => config.enabled)
-
-  if (!_isAuthor) _isAuthor = ref(false)
-  const isAuthor = _isAuthor
-
-  /** Capture `?ec_author=<secret>` once on the client: persist it, flip author
-   *  mode on, and strip the param from the URL so the secret isn't left in the
-   *  address bar / shared links. Idempotent and SSR-safe. */
-  function initAuthor(): void {
-    if (!import.meta.client) return
-    try {
-      const url = new URL(window.location.href)
-      const fromQuery = url.searchParams.get(AUTHOR_QUERY_PARAM)
-      if (fromQuery) {
-        localStorage.setItem(AUTHOR_TOKEN_KEY, fromQuery)
-        _authorToken = fromQuery
-        url.searchParams.delete(AUTHOR_QUERY_PARAM)
-        window.history.replaceState(window.history.state, '', url.toString())
-      }
-    }
-    catch {
-      // URL/localStorage unavailable — author mode simply stays off.
-    }
-    isAuthor.value = !!readAuthorToken()
+  async function signOutUser(): Promise<void> {
+    if (!auth) return
+    await signOut(auth)
   }
 
-  async function fetchComments(path: string): Promise<Comment[]> {
-    if (!config.enabled || !import.meta.client) return []
-    try {
-      const res = await $fetch<{ comments: Comment[] }>(config.endpoint, {
-        method: 'GET',
-        query: { path },
-      })
-      return Array.isArray(res?.comments) ? res.comments : []
-    }
-    catch {
-      // Backend unreachable / not wired yet — fail closed (no comments shown)
-      // rather than breaking the article render.
-      return []
-    }
-  }
-
-  async function postComment(path: string, draft: CommentDraft): Promise<Comment | null> {
-    if (!config.enabled || !import.meta.client) return null
-    return await $fetch<Comment>(config.endpoint, {
-      method: 'POST',
-      body: {
-        path,
-        body: draft.body,
-        anchor: draft.anchor,
-        author: draft.author || undefined,
-      },
+  async function postComment(body: string, anchor: CommentAnchor): Promise<void> {
+    const u = user.value
+    if (!u) throw new Error('Sign in to comment')
+    await addDoc(collection(db, 'comments'), {
+      path,
+      body,
+      anchor,
+      author: u.displayName || u.email || 'Anonymous',
+      authorUid: u.uid,
+      createdAt: serverTimestamp(),
     })
   }
 
-  async function resolveComment(path: string, id: string): Promise<void> {
-    const token = readAuthorToken()
-    if (!config.enabled || !import.meta.client || !token) return
-    await $fetch(config.endpoint, {
-      method: 'DELETE',
-      query: { path, id },
-      headers: { Authorization: `Bearer ${token}` },
-    })
+  async function resolveComment(id: string): Promise<void> {
+    await deleteDoc(doc(db, 'comments', id))
   }
 
   return {
-    enabled,
-    endpoint: config.endpoint,
-    isAuthor,
-    initAuthor,
-    fetchComments,
+    user: user as Ref<typeof user.value>,
+    isOwner,
+    comments,
+    signIn,
+    signOutUser,
     postComment,
     resolveComment,
   }

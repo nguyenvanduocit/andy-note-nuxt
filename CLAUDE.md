@@ -34,32 +34,35 @@ SEO is **layer wiring** — consumers inherit a complete stack and never re-impl
 
 ## Reader comments (opt-in, layer-provided)
 
-Code-review-style commenting: a reader selects any prose and comments on that span; the author resolves and it disappears for everyone. **OFF by default** — `runtimeConfig.public.site.comments.enabled` gates the entire UI, so consumers who don't wire a backend ship nothing.
+Code-review-style commenting: a reader selects any prose and comments on that span; the site owner resolves and it disappears for everyone. Posting requires **Google sign-in** and the author name comes from the verified token. **OFF by default** — `runtimeConfig.public.site.comments.enabled` gates the entire UI, so consumers who don't wire Firebase ship nothing.
+
+Everything runs on **Firebase** — Google sign-in (Firebase Auth) for identity, **Firestore** for storage — integrated through **VueFire** (`nuxt-vuefire`). There is no server of our own: a static `nuxt generate` site talks to Firestore directly from the client, and **Firestore security rules** are the access-control boundary.
 
 The split is the usual one — **layer = machinery, consumer = deployment**:
 
-- **Layer owns**: `useComments.ts` (data layer — config read, author token, fetch/post/resolve against `comments.endpoint`), `CommentLayer.vue` (selection → floating composer, injected `<mark>` highlights, thread popover, in-flow comments panel), mounted in `ContentView.vue`'s article view, and `server-functions/comments.ts` (the **reference Cloudflare Pages Function**). All client UI is gated behind `mounted` + `enabled`, so SSR/prerender emit nothing and comments are fetched at runtime only — never baked into static HTML.
-- **Consumer owns**: the KV namespace, the resolve secret, and the `functions/` file that exposes the endpoint — same class of data as `site.url`. A static `nuxt generate` site has **no Nitro server**, so the backend is a CF Pages Function (compiled from the consumer's repo-root `functions/`, served alongside the static assets), not a `server/api` route.
+- **Layer owns**: `useComments.ts` (data layer — auth state via `useCurrentUser`, the live `useCollection` query, create/delete against Firestore), `CommentLayerClient.vue` (selection → floating composer with a Google sign-in gate, injected `<mark>` highlights, thread popover, in-flow comments panel, owner-only Resolve), `CommentLayer.vue` (a thin `enabled`-gate that mounts the client impl inside `<ClientOnly>`), and the reference `firestore.rules`. The impl's setup calls VueFire composables that need the consumer's `nuxt-vuefire` plugin, so it is mounted **client-only and only when enabled** — SSR/prerender and comments-off consumers never reach it.
+- **Consumer owns**: the Firebase project, the `firebaseConfig` they hand to `vuefire.config`, the deployed security rules, and the owner allowlist — same class of data as `site.url`.
 
 Consumer wiring (per site):
 
 ```ts
-// 1. <consumer>/functions/api/comments.ts  — re-export the layer's handlers
-export { onRequestGet, onRequestPost, onRequestDelete } from 'andy-note-nuxt/server-functions/comments'
+// <consumer>/nuxt.config.ts
+modules: ['nuxt-vuefire'],
+vuefire: {
+  auth: { enabled: true },                 // Google sign-in, client-side
+  config: { apiKey: '…', authDomain: '…', projectId: '…', appId: '…' },
+},
+runtimeConfig: { public: { site: { comments: {
+  enabled: true,
+  owners: ['you@example.com'],             // who may Resolve (mirror in rules)
+} } } },
 ```
 
-```ts
-// 2. <consumer>/nuxt.config.ts — opt in (deep-merges over the layer default)
-runtimeConfig: { public: { site: { comments: { enabled: true } } } }
-```
+Then, in the Firebase console: enable the **Google** sign-in provider, add the site's domain(s) to **Authorized domains**, create a **Firestore** database, and deploy `firestore.rules` (copy from the layer, set your owner email in `isOwner()`).
 
-3. **CF Pages → Settings → Functions → KV bindings**: `COMMENTS` → a KV namespace you create.
-4. **CF Pages → Settings → Environment variables** (encrypt): `COMMENTS_RESOLVE_SECRET` → a long random string (authorizes resolve).
-5. **Author mode**: visit any article once with `?ec_author=<COMMENTS_RESOLVE_SECRET>` — the secret is stored in that browser's `localStorage` and stripped from the URL; resolve actions then appear and send it as a bearer token on `DELETE`.
+**Access model (enforced by `firestore.rules`, not app code):** `comments` collection — public **read**; **create** only when signed in and the doc is a well-formed, selection-anchored comment whose `authorUid == request.auth.uid` and `createdAt == request.time` (no spoofed identity, no backdating, no whole-page notes); **update** denied; **delete** (resolve) only for the owner email allowlist. POST being open to any signed-in Google user is the intended trade-off (readers need an account, not approval); tighten with Firebase App Check at the dashboard if needed — a deployment concern, so the layer ships none.
 
-**Abuse**: POST is intentionally open (readers need no account). The function bounds it with a per-IP rate limit (fails closed on a KV error) and a per-article cap (`MAX_PER_PATH`, 200 — open comments are author-resolved, never auto-expired, so it's a hard cap not a TTL). For stronger protection, gate `/api/*` at the Cloudflare dashboard with **WAF rules or a Turnstile challenge** — a deployment concern, so the layer ships no challenge code.
-
-KV layout is one entry per comment (`c:<path>:<id>`) — listing open comments is a prefix scan (page values fetched in parallel), resolving is a delete, so concurrent posts never clobber a shared blob. Local testing needs `wrangler pages dev` (Nuxt dev can't run CF Functions); without a backend wired, `fetchComments` fails closed and the panel shows zero comments.
+`owners` lives in both the deployed rules (server, authoritative) and `runtimeConfig.public.site.comments.owners` (client, to show/hide Resolve); the latter ends up in the consumer's public bundle. The Firestore query is a single `where('path','==',…)` (no composite index) sorted client-side; `useCollection` makes the roll live, so posts/resolves appear in real time across tabs. Local testing needs the consumer's real `firebaseConfig` and `localhost` in Authorized domains.
 
 ## Brutalist-terminal aesthetic (brand surface)
 
