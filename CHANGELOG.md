@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.1](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.14.0...v0.14.1) (2026-06-15)
+
+
+### Bug Fixes
+
+* drive comment auth via firebase/auth, not nuxt-vuefire's auth module ([d2764a6](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/d2764a66ee31fa4b3a6a32f9d1de33293815af6d))
+
 ## [0.14.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.13.1...v0.14.0) (2026-06-15)
 
 
