@@ -64,6 +64,9 @@ Edit `runtimeConfig.public.site` in `nuxt.config.ts` for branding (title, descri
 | `app/components/ContentView.vue` | Per-column renderer (auto-switches listing vs article view) |
 | `app/components/LocalStorageChecklist.vue` | MDC component — persistent checklist embeddable in any markdown |
 | `app/composables/useStack.ts` | Stack state machine (push/pop columns, URL sync, scroll geometry) |
+| `app/components/CommentLayer.vue` · `CommentLayerClient.vue` | Reader comments UI — opt-in (see [Reader comments](#reader-comments-optional)) |
+| `app/composables/useComments.ts` | Reader comments data layer (Firestore + client-side Google auth) |
+| `firestore.rules` | Reference Firestore security rules for the comments feature |
 | `app/assets/css/main.css` | Brutalist terminal theme — Tailwind v3 base + custom prose layers |
 | `nuxt.config.ts` | Module wiring (`@nuxt/content`, `@nuxtjs/tailwindcss`, `vue-sonner/nuxt`, `vite-plugin-ai-annotator`) |
 | `tailwind.config.js` | Color palette + stamp shadow tokens |
@@ -134,9 +137,82 @@ Unused fields cost nothing (null in cache).
 - **Section auto-grouping** — any subfolder of `content/` becomes a section automatically; no manual registration.
 - **`document_type: convention`** — pages with this frontmatter are excluded from listings (use for template/scaffolding docs).
 
+## Reader comments (optional)
+
+Code-review-style commenting: a reader selects any prose and comments on that span; the site owner resolves it and it clears for everyone. **Off by default.** Reading is public; **posting requires Google sign-in** and the author name comes from the verified account — there are no anonymous or whole-page comments.
+
+Everything runs on **Firebase** — Google sign-in (Firebase Auth) + Firestore for storage — integrated through [VueFire](https://vuefire.vuejs.org/). A static `nuxt generate` site talks to Firestore directly from the browser, so there's no backend of your own to host: **Firestore security rules** are the access boundary.
+
+### 1. Add the deps to your project
+
+```sh
+bun add firebase vuefire nuxt-vuefire
+```
+
+### 2. Create + configure a Firebase project
+
+In the [Firebase console](https://console.firebase.google.com):
+
+1. **Create a project** (or reuse one).
+2. **Register a Web app** (Project settings → *Your apps* → Web) and copy the `firebaseConfig` object it shows.
+3. **Authentication → Sign-in method** → enable **Google** and set a support email.
+4. **Authentication → Settings → Authorized domains** → add your production domain (e.g. `notes.example.com`). `localhost` is already listed for local dev.
+5. **Firestore Database → Create database** → pick a region near your readers (permanent), "production mode" is fine — you deploy rules in the next step.
+6. **Deploy the security rules**: copy [`firestore.rules`](./firestore.rules) from this layer into your repo, replace the email in `isOwner()` with yours, and publish it (Firestore → *Rules* tab, or `firebase deploy --only firestore:rules`).
+
+### 3. Wire it in your `nuxt.config.ts`
+
+```ts
+export default defineNuxtConfig({
+  extends: ['github:nguyenvanduocit/andy-note-nuxt'],
+  modules: ['nuxt-vuefire'],
+  vuefire: {
+    // No `auth` block — see "Static-site note" below.
+    config: {
+      apiKey: 'AIza…',
+      authDomain: 'your-project.firebaseapp.com',
+      projectId: 'your-project',
+      appId: '1:…:web:…',
+      // storageBucket / messagingSenderId are optional
+    },
+  },
+  runtimeConfig: {
+    public: {
+      site: {
+        comments: {
+          enabled: true,
+          owners: ['you@example.com'], // who may Resolve — mirror in firestore.rules
+        },
+      },
+    },
+  },
+})
+```
+
+That's it — select text in any article and a "Comment" bubble appears. The `firebaseConfig` values are **public by design** (they ship in the client bundle and only identify the project); access is enforced by the rules + Authorized domains, not by keeping them secret. Don't commit a service-account / admin private key — none is needed.
+
+### How access control works
+
+The deployed `firestore.rules` are the authority (not app code):
+
+- **read** — public (comments are public discussion).
+- **create** — signed-in only, and the doc must be a well-formed, selection-anchored comment whose `authorUid` matches the caller and whose `createdAt` is the server time (no spoofed identity, no backdating).
+- **update** — denied (comments are immutable).
+- **delete (resolve)** — only the owner email allowlist.
+
+`owners` lives in **both** the rules (server, authoritative) and your `runtimeConfig` (client, to show/hide the Resolve button — so that email ends up in your public bundle). Sign in with an owner account and a **Resolve** button appears on each comment; resolving deletes it for everyone, live.
+
+### Static-site note (important)
+
+Do **not** set `vuefire.auth.enabled`. On a static `nuxt generate` build, nuxt-vuefire's auth module registers a *server-side* plugin that imports `firebase-admin` — which a static host has no server to run, so the SSR/prerender build fails (`"getAuth" is not exported by firebase-admin/auth`). This theme drives Google sign-in with the client `firebase/auth` SDK instead; VueFire only provides the Firebase app + Firestore (`useFirestore` / `useCollection`).
+
+### Local testing
+
+`localhost` is an Authorized domain by default, so `bun dev` + sign-in talks to your real Firestore from your machine. Comments you post there are real — resolve them (or clear the `comments` collection) when you're done.
+
 ## Tech stack
 
-Nuxt 4 · Nuxt Content v3 (SQLite cache via better-sqlite3) · TailwindCSS v3 · Vue 3.5 · Self-hosted fonts (Space Grotesk + Literata via `@fontsource`)
+Nuxt 4 · Nuxt Content v3 (SQLite cache via better-sqlite3) · TailwindCSS v3 · Vue 3.5 · Self-hosted fonts (Space Grotesk + Literata via `@fontsource`) · *optional* Firebase (Auth + Firestore) via VueFire for [reader comments](#reader-comments-optional)
 
 ## License
 
