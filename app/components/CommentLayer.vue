@@ -12,7 +12,7 @@
 //   • select text in the article → floating "Comment" button → composer popover
 //   • a stored comment paints a coral <mark>; clicking it opens its thread
 //   • the author (holds the resolve secret) clicks Resolve → it disappears for all
-import { useFloating, offset, flip, shift, autoUpdate } from '@floating-ui/vue'
+import { useFloating, offset, flip, shift, autoUpdate, type VirtualElement } from '@floating-ui/vue'
 import { toast } from 'vue-sonner'
 import type { Comment, CommentAnchor } from '~/composables/useComments'
 
@@ -184,7 +184,7 @@ const openCount = computed(() => comments.value.length)
 const pendingAnchor = ref<CommentAnchor | null>(null)
 
 // Floating "Comment" bubble shown on a fresh selection.
-const bubbleRef = ref<{ getBoundingClientRect: () => DOMRect } | null>(null)
+const bubbleRef = ref<VirtualElement | null>(null)
 const bubbleEl = useTemplateRef<HTMLElement>('bubbleEl')
 const bubbleOpen = ref(false)
 const { floatingStyles: bubbleStyles } = useFloating(bubbleRef, bubbleEl, {
@@ -196,7 +196,7 @@ const { floatingStyles: bubbleStyles } = useFloating(bubbleRef, bubbleEl, {
 // One mode-switched popover for both composing and reading a thread.
 type PopMode = 'compose' | 'thread' | null
 const popMode = ref<PopMode>(null)
-const popRef = ref<Element | { getBoundingClientRect: () => DOMRect } | null>(null)
+const popRef = ref<Element | VirtualElement | null>(null)
 const popEl = useTemplateRef<HTMLElement>('popEl')
 const { floatingStyles: popStyles } = useFloating(popRef, popEl, {
   placement: 'bottom',
@@ -279,16 +279,33 @@ function captureSelection(): void {
     end,
   }
 
-  // Virtual reference re-reads the LIVE selection rect each call, so the bubble
-  // (and the compose popover that reuses this ref) track the text under scroll
-  // instead of pinning to a frozen snapshot. The captured range is the fallback
-  // once the selection is gone.
-  const fallbackRect = range.getBoundingClientRect()
+  // Virtual reference re-measures the anchor rect LIVE on every call so the
+  // bubble (and the compose popover that reuses this ref) track the selected
+  // text as the column body scrolls — never pinned like position:fixed.
+  //
+  // `contextElement` is load-bearing: the article scrolls inside
+  // `.column-pane__scroll` (an internal overflow-y-auto div), not the window,
+  // and the floating element is teleported to <body>. Floating UI's
+  // autoUpdate(ancestorScroll) attaches scroll listeners to the overflow
+  // ancestors of the reference and the floating element; a bare virtual element
+  // has none, so it would only hear window scroll and miss the inner one,
+  // leaving the popover frozen. Pointing contextElement at the in-column content
+  // node lets autoUpdate find the real scroll container and reposition on scroll.
+  //
+  // The fallback is a CLONED range, re-measured each call — not a frozen rect.
+  // Focusing the composer textarea collapses the page selection; a static rect
+  // would stop tracking, but the cloned range still points at the un-mutated DOM
+  // (the highlight is painted only on submit), so its rect keeps moving on scroll.
+  const fallbackRange = range.cloneRange()
   bubbleRef.value = {
     getBoundingClientRect: () => {
       const live = window.getSelection()
-      return live && live.rangeCount > 0 ? live.getRangeAt(0).getBoundingClientRect() : fallbackRect
+      if (live && !live.isCollapsed && live.rangeCount > 0) {
+        return live.getRangeAt(0).getBoundingClientRect()
+      }
+      return fallbackRange.getBoundingClientRect()
     },
+    contextElement: root,
   }
   bubbleOpen.value = true
 }
