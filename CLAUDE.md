@@ -49,7 +49,10 @@ Consumer wiring (per site):
 // <consumer>/nuxt.config.ts
 modules: ['nuxt-vuefire'],
 vuefire: {
-  auth: { enabled: true },                 // Google sign-in, client-side
+  // No `auth` block: on a static SSG site, nuxt-vuefire's auth module wires a
+  // server plugin that imports `firebase-admin` and breaks the prerender build.
+  // The theme drives Google sign-in via the client `firebase/auth` SDK instead;
+  // VueFire only needs to provide the Firebase app + Firestore.
   config: { apiKey: '…', authDomain: '…', projectId: '…', appId: '…' },
 },
 runtimeConfig: { public: { site: { comments: {

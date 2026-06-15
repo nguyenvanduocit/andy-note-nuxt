@@ -1,4 +1,4 @@
-import { computed, type ComputedRef, type Ref } from 'vue'
+import { computed, ref, type ComputedRef, type Ref } from 'vue'
 import {
   addDoc,
   collection,
@@ -9,8 +9,16 @@ import {
   where,
   type Timestamp,
 } from 'firebase/firestore'
-import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
-import { useCollection, useCurrentUser, useFirebaseAuth, useFirestore } from 'vuefire'
+import {
+  getAuth,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut,
+  type Auth,
+  type User,
+} from 'firebase/auth'
+import { useCollection, useFirebaseApp, useFirestore } from 'vuefire'
 
 // Reader comments — data layer (the "functional core").
 //
@@ -19,13 +27,16 @@ import { useCollection, useCurrentUser, useFirebaseAuth, useFirestore } from 'vu
 // owns only the *data* concern — auth state, the live query, and create/delete.
 // All DOM / selection / highlight work lives in CommentLayerClient.vue.
 //
-// VueFire (`nuxt-vuefire`, wired by the consumer) provides the Firebase app via a
-// Nuxt plugin; this composable consumes it through `useFirestore` / `useFirebaseAuth`
-// / `useCurrentUser`. It is therefore only ever called from a client-only,
-// `enabled`-gated component, so a consumer without VueFire (or with comments off)
-// never reaches these calls. Access control is enforced server-side by Firestore
-// security rules (see the reference `firestore.rules`); the client mirrors the
-// owner allowlist purely to decide whether to show the Resolve button.
+// VueFire (`nuxt-vuefire`, wired by the consumer) initializes the Firebase app
+// and provides Firestore through `useFirestore` / `useCollection` (the reactive,
+// real-time query). Auth, by contrast, is driven directly through the
+// `firebase/auth` SDK on the client — deliberately NOT through VueFire's auth
+// module, which on an SSR/SSG build pulls in `firebase-admin` for server-side
+// session verification a static site has no server to run. Since the only caller
+// is a client-only, `enabled`-gated component, `getAuth` / `onAuthStateChanged`
+// run on the client where the app is initialized. Access control is enforced by
+// Firestore security rules (see the reference `firestore.rules`); the client
+// mirrors the owner allowlist only to decide whether to show Resolve.
 
 /** A text-quote + position anchor for a selection-scoped comment. */
 export interface CommentAnchor {
@@ -62,6 +73,18 @@ interface CommentsConfig {
   owners: string[]
 }
 
+// One auth-state subscription shared across every CommentLayer instance (the
+// same article can mount in two stacked columns). `onAuthStateChanged` registers
+// once; the ref it feeds is what all instances read.
+let _user: Ref<User | null> | null = null
+function sharedUser(auth: Auth): Ref<User | null> {
+  if (!_user) {
+    _user = ref<User | null>(null)
+    onAuthStateChanged(auth, (u) => { _user!.value = u })
+  }
+  return _user
+}
+
 function toMillis(c: Comment): number {
   // A freshly-created doc shows `createdAt: null` locally until the serverTimestamp
   // resolves — treat it as "just now" so it sorts to the end, not the start.
@@ -74,8 +97,8 @@ export function useComments(path: string) {
   const owners = Array.isArray(raw?.owners) ? raw.owners.filter(o => typeof o === 'string') : []
 
   const db = useFirestore()
-  const auth = useFirebaseAuth()
-  const user = useCurrentUser()
+  const auth = getAuth(useFirebaseApp())
+  const user = sharedUser(auth)
 
   const isOwner: ComputedRef<boolean> = computed(() => {
     const email = user.value?.email
@@ -92,12 +115,10 @@ export function useComments(path: string) {
   )
 
   async function signIn(): Promise<void> {
-    if (!auth) return
     await signInWithPopup(auth, new GoogleAuthProvider())
   }
 
   async function signOutUser(): Promise<void> {
-    if (!auth) return
     await signOut(auth)
   }
 
@@ -118,13 +139,5 @@ export function useComments(path: string) {
     await deleteDoc(doc(db, 'comments', id))
   }
 
-  return {
-    user: user as Ref<typeof user.value>,
-    isOwner,
-    comments,
-    signIn,
-    signOutUser,
-    postComment,
-    resolveComment,
-  }
+  return { user, isOwner, comments, signIn, signOutUser, postComment, resolveComment }
 }
