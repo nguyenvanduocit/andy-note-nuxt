@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.13.0...v0.13.1) (2026-06-15)
+
+
+### Bug Fixes
+
+* keep comment popover anchored to the selection while the column scrolls ([9379a86](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/9379a8688ca3fbddffe4ba74fc288ef3d10b56a7))
+
 ## [0.13.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.12.0...v0.13.0) (2026-06-15)
 
 
