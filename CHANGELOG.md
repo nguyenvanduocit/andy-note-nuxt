@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.12.0...v0.13.0) (2026-06-15)
+
+
+### Features
+
+* scope reader comments to text selections ([8263876](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/8263876ae839419d1891be54bdcb8dc8917cd6dd))
+
 ## [0.12.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.11.1...v0.12.0) (2026-06-14)
 
 
