@@ -42,7 +42,7 @@ function onClick(event: MouseEvent) {
 
 <template>
   <div
-    class="stacked-column flex flex-col h-full overflow-hidden bg-terminal-bg border-r-[3px] border-terminal-border"
+    class="stacked-column flex flex-col h-full overflow-hidden bg-terminal-bg"
     :data-column-index="index"
     :style="{ '--col-idx': index }"
   >
@@ -81,11 +81,30 @@ function onClick(event: MouseEvent) {
   position: sticky;
   left: calc(var(--col-idx, 0) * var(--stack-peek, 48px));
   z-index: var(--col-idx, 0);
-  /* Left outline via box-shadow: takes no layout space, so when two columns
-     are adjacent the left shadow of the later column (higher z-index) paints
-     directly over the earlier column's right border — unified table-cell look.
-     When a column stands alone, it renders as a clean left border. */
+  /* Column dividers, no border (a border parks a line BESIDE the scrollbar
+     instead of over it). The LEFT outline box-shadow is also the adjacency
+     divider: for two adjacent columns the later one (higher z-index) paints its
+     left outline over the earlier column's right edge — including that column's
+     scrollbar thumb, the same #474541 (see main.css) — so thumb and divider
+     read as a single line. */
   box-shadow: -3px 0 0 #474541;
+}
+
+/* Right divider, drawn as an overlay ABOVE the column's own scrollbar (positive
+   z-index inside this column's stacking context, so it paints after the
+   descendant scroll pane's scrollbar) — the thumb merges into the line instead
+   of parking beside it. Adjacent columns get their right divider for free from
+   the neighbour's left box-shadow and just hide this ::after under that
+   neighbour; it only becomes visible on the rightmost / standalone column,
+   which has no neighbour to overpaint its scrollbar. */
+.stacked-column::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 3px;
+  background: #474541;
+  z-index: 1;
+  pointer-events: none;
 }
 
 /* Mobile (<md): ONE scroll, not two. The horizontal sticky-peek stack flattens
@@ -113,5 +132,8 @@ function onClick(event: MouseEvent) {
     border-right: 0;
     border-bottom: 3px solid #474541;
   }
+  /* Mobile uses border-bottom dividers and position:static columns, where an
+     absolute ::after would anchor to the wrong ancestor — drop it. */
+  .stacked-column::after { display: none; }
 }
 </style>

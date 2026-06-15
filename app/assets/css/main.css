@@ -122,7 +122,14 @@
   ::selection { @apply bg-primary text-terminal-bg; }
   ::-moz-selection { @apply bg-primary text-terminal-bg; }
 
-  /* Thin scrollbars with coral hover — matches the terminal accent. */
+  /* Thin scrollbars, thumb painted in the divider colour (#474541 =
+     terminal.border). The column reading panes carry no right border of their
+     own (see StackedColumn.vue), so the thumb renders at the very column edge
+     and the neighbour column's 3px divider box-shadow — the same #474541 —
+     paints over its outer half: thumb and divider read as one vertical line
+     instead of two parked side by side. Styling ::-webkit-scrollbar keeps this
+     6px bar identical for mouse and trackpad (no fat native scrollbar). Coral
+     on hover. */
   * {
     scrollbar-width: thin;
     scrollbar-color: theme('colors.terminal.border') transparent;
