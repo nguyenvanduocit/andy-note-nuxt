@@ -1,6 +1,6 @@
 {
   "name": "andy-note-nuxt",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "Brutalist-terminal Nuxt Content theme for personal notes, guides, and second-brain knowledge bases. Use as a Nuxt layer.",
   "type": "module",
   "main": "./nuxt.config.ts",
