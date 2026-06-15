@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.14.2](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.14.1...v0.14.2) (2026-06-15)
+
+
+### Bug Fixes
+
+* sit the column scrollbar on the divider instead of beside it ([f9840d4](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/f9840d48e1e07fe4b5bc69503c27508379af9451))
+
+
+### Documentation
+
+* document Firebase reader-comments setup in the README ([49d0eaa](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/49d0eaa0d0b6122d830cddc0374f342469481537))
+
 ## [0.14.1](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.14.0...v0.14.1) (2026-06-15)
 
 
