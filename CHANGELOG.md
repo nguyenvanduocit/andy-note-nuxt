@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.3](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.14.2...v0.14.3) (2026-06-17)
+
+
+### Bug Fixes
+
+* show a loading skeleton while a freshly pushed column resolves ([58b87ae](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/58b87aefe6e5553e5075e268caadd5c839af8498))
+
 ## [0.14.2](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.14.1...v0.14.2) (2026-06-15)
 
 
