@@ -48,6 +48,22 @@ function onClick(event: MouseEvent) {
   >
     <div class="flex-1 min-h-0" @click.capture="onClick">
       <!--
+        Per-column Suspense. ContentView / TagListing top-level `await` their
+        content queries, so they are async setup components. Without a Suspense
+        of their own they fell back to Nuxt's page-level one — and registering a
+        NEW async dep on an already-resolved Suspense makes Vue withhold the new
+        column's DOM entirely until the query lands, so a freshly pushed column
+        appeared with no loading affordance (not even its enter-fade). A
+        column-local Suspense shows the skeleton #fallback the instant the
+        column mounts, then swaps to content on resolve.
+
+        Deliberately NOT keyed and NO `timeout`: on a middle-column path swap
+        ([A,B,C] + click in B → [A,B,X]) the Suspense is already resolved, so
+        Vue keeps the old content visible until the new one resolves — the
+        silent instant content swap StackedColumns.vue documents. The fallback
+        only shows for genuinely new columns. SSR/prerender still await this
+        nested Suspense, so prerendered HTML stays fully rendered.
+
         :key="path" forces the inner view to remount when this slot's path
         prop changes. Without it, a slot whose StackedColumns key is the
         index (kept stable across stack mutations to preserve transition
@@ -56,8 +72,41 @@ function onClick(event: MouseEvent) {
         content stays frozen on the original path. Remounting on path change
         re-runs setup with the new path.
       -->
-      <TagListing v-if="isTagPath" :key="path" :tag="tagSlug" :no-throw="true" />
-      <ContentView v-else :key="path" :path="path" :no-throw="true" />
+      <Suspense>
+        <TagListing v-if="isTagPath" :key="path" :tag="tagSlug" :no-throw="true" />
+        <ContentView v-else :key="path" :path="path" :no-throw="true" />
+
+        <!-- Skeleton mirrors the column structure (.column-pane → header +
+             scroll body) so content swaps in with zero layout shift. The header
+             row carries the SAME `text-sm` type scale as ContentView /
+             TagListing's real <h2> — without it the glyph renders at the
+             inherited 16px and the header is ~4px taller than the resolved one,
+             so the swap would shift. The glyph tracks `isTagPath` so it matches
+             the header that's about to resolve (# for a tag column, / otherwise).
+             Sharp rectangles, no rounding — the brutalist surface. animate-pulse
+             is neutralized by the global prefers-reduced-motion block in main.css. -->
+        <template #fallback>
+          <div class="column-pane flex flex-col h-full" aria-busy="true">
+            <div class="section-card-header flex-none">
+              <div class="text-sm font-bold uppercase tracking-tight flex items-center gap-2 animate-pulse">
+                <span class="text-primary -translate-y-[1.5px]">{{ isTagPath ? '#' : '/' }}</span>
+                <span class="block h-3.5 w-32 bg-terminal-surface-1" />
+              </div>
+            </div>
+            <div class="column-pane__scroll flex-1 overflow-y-auto min-h-0 px-5 py-6">
+              <div class="flex flex-col gap-3 animate-pulse">
+                <span class="block h-6 w-3/5 bg-terminal-surface-1 mb-2" />
+                <span class="block h-4 w-full bg-terminal-surface-1" />
+                <span class="block h-4 w-11/12 bg-terminal-surface-1" />
+                <span class="block h-4 w-4/5 bg-terminal-surface-1" />
+                <span class="block h-4 w-full bg-terminal-surface-1 mt-4" />
+                <span class="block h-4 w-10/12 bg-terminal-surface-1" />
+                <span class="block h-4 w-3/4 bg-terminal-surface-1" />
+              </div>
+            </div>
+          </div>
+        </template>
+      </Suspense>
     </div>
   </div>
 </template>
