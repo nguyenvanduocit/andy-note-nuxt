@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.1](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.15.0...v0.15.1) (2026-06-18)
+
+
+### Bug Fixes
+
+* scroll wide KaTeX equations inside the column instead of overflowing ([4a8f6c5](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/4a8f6c56076a6b6283eb5bf84faa003229633224))
+
 ## [0.15.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.14.3...v0.15.0) (2026-06-18)
 
 
