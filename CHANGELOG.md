@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.14.3...v0.15.0) (2026-06-18)
+
+
+### Features
+
+* typeset markdown math with KaTeX ([d14dacd](https://github.com/nguyenvanduocit/andy-note-nuxt/commit/d14dacdaac9f04a7acccb7531dd62a75434b5961))
+
 ## [0.14.3](https://github.com/nguyenvanduocit/andy-note-nuxt/compare/v0.14.2...v0.14.3) (2026-06-17)
 
 
