@@ -67,7 +67,13 @@ export default defineNuxtConfig({
     viewer: false,
   },
 
-  css: [resolve('./app/assets/css/main.css')],
+  // KaTeX stylesheet first so main.css (and any `.katex` theme overrides in it)
+  // win the cascade. Pulled from the `katex` package via bare specifier — it is
+  // a layer dependency, so it resolves from the consumer's node_modules too, and
+  // Vite rebases the `url(fonts/KaTeX_*.woff2)` references into the build output
+  // (postcss-import would not, which is why this lives here, not as an @import in
+  // main.css alongside the @fontsource fonts).
+  css: ['katex/dist/katex.min.css', resolve('./app/assets/css/main.css')],
 
   content: {
     experimental: {
@@ -76,6 +82,19 @@ export default defineNuxtConfig({
     build: {
       markdown: {
         highlight: false,
+        // Math rendering: `remark-math` parses `$…$` (inline) and `$$…$$`
+        // (block) in markdown into math nodes; `rehype-katex` typesets them to
+        // KaTeX HTML+MathML at build time (no client-side KaTeX runtime ships).
+        // `throwOnError: false` degrades a malformed expression in user content
+        // to a visible red error string instead of aborting the whole prerender.
+        remarkPlugins: {
+          'remark-math': {},
+        },
+        rehypePlugins: {
+          'rehype-katex': {
+            throwOnError: false,
+          },
+        },
       },
     },
   },
