@@ -618,6 +618,22 @@
     overflow-wrap: anywhere;
   }
 
+  /* Math (KaTeX) — block equations rendered from `$$…$$`. KaTeX's own
+     `.katex-display` rule carries no overflow handling, so a wide equation
+     would spill past the narrow column edge. Scroll it horizontally instead
+     (the math analogue of how `pre code` wraps rather than trapping the
+     column). `padding-block` keeps the scrollbar off the equation's
+     descenders; the margin matches the `.content` 1.5rem vertical rhythm.
+     Colour needs no theming — KaTeX inherits the prose `currentColor`, so it
+     reads on the dark surface; the `where:` legend under each equation is
+     ordinary prose. */
+  .content .katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-block: 0.25rem;
+    margin: 1.5rem 0;
+  }
+
   /* Tables — internal grid with cell padding. Edge cells flush horizontally
      (leftmost: no pl, rightmost: no pr) and at the bottom (last tbody row: no
      pb), but th keeps balanced vertical padding because the bg highlight needs
